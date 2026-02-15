@@ -1,0 +1,30 @@
+{
+  "name": "codaholiq",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently --names api,web --prefix-colors blue,green \"npm run dev --workspace @codaholiq/api\" \"npm run dev --workspace @codaholiq/web\"",
+    "build": "npm run build --workspace @codaholiq/api && npm run build --workspace @codaholiq/web",
+    "test": "npm test --workspaces",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit --project apps/api/tsconfig.json && tsc --noEmit --project apps/web/tsconfig.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.0",
+    "prettier": "^3.8.1",
+    "typescript-eslint": "^8.54.0"
+  }
+}

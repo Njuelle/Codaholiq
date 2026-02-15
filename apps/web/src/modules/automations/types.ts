@@ -1,0 +1,97 @@
+export type TriggerType = 'event' | 'cron' | 'manual';
+export type VariableSource = 'static' | 'event_payload';
+
+export interface AutomationVariable {
+  readonly id: number;
+  readonly automationId: number;
+  readonly key: string;
+  readonly value: string;
+  readonly source: VariableSource;
+  readonly required: boolean;
+  readonly createdAt: string;
+}
+
+export interface Automation {
+  readonly id: number;
+  readonly orgId: number;
+  readonly repoId: number;
+  readonly name: string;
+  readonly description: string | null;
+  readonly triggerType: TriggerType;
+  readonly triggerConfig: EventTriggerConfig | CronTriggerConfig | ManualTriggerConfig;
+  readonly promptTemplate: string;
+  readonly model: string | null;
+  readonly workflowFile: string;
+  readonly enabled: boolean;
+  readonly createdBy: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export interface ClaudeModel {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+}
+
+export interface AutomationWithVariables extends Automation {
+  readonly variables: readonly AutomationVariable[];
+}
+
+export type ConditionOperator =
+  | 'equals'
+  | 'not_equals'
+  | 'contains'
+  | 'not_contains'
+  | 'starts_with'
+  | 'ends_with'
+  | 'matches'
+  | 'exists'
+  | 'not_exists';
+
+export interface TriggerCondition {
+  readonly path: string;
+  readonly operator: ConditionOperator;
+  readonly value?: string;
+}
+
+export interface ConditionGroup {
+  readonly conditions: readonly TriggerCondition[];
+}
+
+export interface EventTriggerConfig {
+  readonly events: readonly string[];
+  readonly conditionGroups?: readonly ConditionGroup[];
+}
+
+export interface CronTriggerConfig {
+  readonly schedule: string;
+  readonly timezone?: string;
+}
+
+export type ManualTriggerConfig = Record<string, never>;
+
+export interface AutomationVariableInput {
+  readonly key: string;
+  readonly value: string;
+  readonly source: VariableSource;
+  readonly required: boolean;
+}
+
+export interface ValidatePromptResponse {
+  readonly resolvedPrompt: string;
+  readonly variables: readonly string[];
+}
+
+export interface ManualTriggerResponse {
+  readonly executionId: number;
+  readonly status: string;
+}
+
+export interface AutomationListFilters {
+  readonly triggerType?: TriggerType;
+  readonly enabled?: boolean;
+  readonly repoId?: number;
+  readonly limit?: number;
+  readonly offset?: number;
+}
