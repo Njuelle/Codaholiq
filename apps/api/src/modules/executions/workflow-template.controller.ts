@@ -1,5 +1,4 @@
 import { Controller, Get } from '@nestjs/common';
-import { Public } from '../../common/decorators/public.decorator';
 
 const WORKFLOW_TEMPLATE = `# .github/workflows/codaholiq.yml
 name: Codaholiq
@@ -52,7 +51,6 @@ jobs:
 
 @Controller()
 export class WorkflowTemplateController {
-  @Public()
   @Get('workflow-template')
   getWorkflowTemplate(): { template: string } {
     return { template: WORKFLOW_TEMPLATE };
