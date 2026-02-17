@@ -15,6 +15,7 @@ import { PromptTemplateService } from './templates/prompt-template.service';
 import { CronSchedulerService } from './triggers/cron-scheduler.service';
 import { SanitizationService } from '../../common/sanitization/sanitization.service';
 import { VariablesService } from '../variables/variables.service';
+import { CatalogService } from './catalog/catalog.service';
 import { AutomationCreateDto } from './dto/create-automation.dto';
 import { AutomationUpdateDto } from './dto/update-automation.dto';
 import type { ValidatePromptDto } from './dto/validate-prompt.dto';
@@ -46,6 +47,8 @@ export class AutomationService {
     private readonly sanitization: SanitizationService,
     @Inject(VariablesService)
     private readonly variablesService: VariablesService,
+    @Inject(CatalogService)
+    private readonly catalogService: CatalogService,
     @Inject(ConfigService)
     private readonly configService: ConfigService,
   ) {
@@ -64,6 +67,58 @@ export class AutomationService {
     userId: number;
     dto: AutomationCreateDto;
   }): Promise<AutomationWithVariables> {
+    await this.validateOrgAndRepo({ orgId, repoId: dto.repoId });
+    return this.saveAutomation({ orgId, userId, dto });
+  }
+
+  async createFromTemplate({
+    orgId,
+    userId,
+    templateSlug,
+    repoId,
+  }: {
+    orgId: number;
+    userId: number;
+    templateSlug: string;
+    repoId: number;
+  }): Promise<AutomationWithVariables> {
+    const template = this.catalogService.getTemplateBySlug({ slug: templateSlug });
+    if (!template) {
+      throw new NotFoundException(`Catalog template "${templateSlug}" not found`);
+    }
+
+    const repo = await this.validateOrgAndRepo({ orgId, repoId });
+    const name = `${template.name} (${repo.name})`;
+
+    return this.saveAutomation({
+      orgId,
+      userId,
+      dto: {
+        name,
+        description: template.description,
+        repoId,
+        triggerType: template.triggerType,
+        triggerConfig: template.triggerConfig,
+        promptTemplate: template.promptTemplate,
+        model: template.model,
+        enabled: true,
+        variables: template.variables.map((v) => ({
+          key: v.key,
+          value: v.value,
+          source: v.source,
+          required: v.required,
+        })),
+      },
+    });
+  }
+
+  private async validateOrgAndRepo({
+    orgId,
+    repoId,
+  }: {
+    orgId: number;
+    repoId: number;
+  }): Promise<{ name: string; orgId: number }> {
     const currentCount = await this.automationRepository.countByOrgId({ orgId });
     if (currentCount >= this.maxAutomationsPerOrg) {
       throw new BadRequestException(
@@ -71,9 +126,7 @@ export class AutomationService {
       );
     }
 
-    const repo = await this.githubEntityRepository.findRepositoryById({
-      id: dto.repoId,
-    });
+    const repo = await this.githubEntityRepository.findRepositoryById({ id: repoId });
     if (!repo) {
       throw new NotFoundException('Repository not found');
     }
@@ -81,6 +134,28 @@ export class AutomationService {
       throw new ForbiddenException('Repository does not belong to this organization');
     }
 
+    return repo;
+  }
+
+  private async saveAutomation({
+    orgId,
+    userId,
+    dto,
+  }: {
+    orgId: number;
+    userId: number;
+    dto: {
+      name: string;
+      description?: string | null;
+      repoId: number;
+      triggerType: 'event' | 'cron' | 'manual';
+      triggerConfig: Record<string, unknown>;
+      promptTemplate: string;
+      model?: string | null;
+      enabled: boolean;
+      variables?: { key: string; value: string; source: 'static' | 'event_payload'; required: boolean }[];
+    };
+  }): Promise<AutomationWithVariables> {
     this.validateTriggerConfig({
       triggerType: dto.triggerType,
       triggerConfig: dto.triggerConfig,

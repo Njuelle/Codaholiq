@@ -1,0 +1,27 @@
+name: "Fix Failing CI"
+description: "Automatically investigates and fixes failing CI workflows by analyzing error logs and creating fix PRs."
+category: "CI/CD"
+icon: "wrench"
+triggerType: "event"
+triggerConfig:
+  events:
+    - "workflow_run.completed"
+  conditionGroups:
+    - conditions:
+        - path: "conclusion"
+          operator: "equals"
+          value: "failure"
+promptTemplate: |
+  The workflow "{{workflow_run.name}}" has failed on branch {{workflow_run.head_branch}} in {{event.repo}}.
+
+  Conclusion: {{workflow_run.conclusion}}
+
+  Investigate the failure:
+  1. Check the workflow run logs to identify the root cause
+  2. Determine if the failure is in tests, linting, build, or other steps
+  3. Analyze the failing code and create a fix
+  4. Open a pull request with the fix
+
+  If the failure is flaky or infrastructure-related, leave a comment explaining the situation instead.
+model: null
+variables: []

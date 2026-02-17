@@ -1,0 +1,26 @@
+name: "PR Security Scan"
+description: "Scans pull requests for security vulnerabilities, insecure patterns, and potential data exposure risks."
+category: "Security"
+icon: "shield"
+triggerType: "event"
+triggerConfig:
+  events:
+    - "pull_request.opened"
+    - "pull_request.synchronize"
+promptTemplate: |
+  Perform a security review of pull request #{{event.number}} in {{event.repo}}.
+
+  PR title: {{event.title}}
+  PR description: {{event.body}}
+
+  Check for:
+  - SQL injection, XSS, and command injection vulnerabilities
+  - Hardcoded secrets, API keys, or credentials
+  - Insecure authentication or authorization patterns
+  - Missing input validation or sanitization
+  - Unsafe deserialization or file handling
+  - OWASP Top 10 vulnerabilities
+
+  Report findings with severity levels (critical, high, medium, low) and remediation steps.
+model: null
+variables: []

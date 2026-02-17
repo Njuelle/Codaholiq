@@ -325,4 +325,60 @@ export const defaultHandlers = [
       requestId: 'test-request-id',
     });
   }),
+
+  http.get('/api/automation-catalog', () => {
+    return HttpResponse.json({
+      data: {
+        categories: [
+          {
+            name: 'Code Quality',
+            templates: [
+              {
+                slug: 'pr-code-review',
+                name: 'PR Code Review',
+                description: 'Automatically reviews pull requests for code quality.',
+                category: 'Code Quality',
+                icon: 'search-code',
+                triggerType: 'event',
+                triggerConfig: { events: ['pull_request.opened'] },
+                promptTemplate: 'Review the PR in {{repo.full_name}}.',
+                model: null,
+                variables: [],
+              },
+            ],
+          },
+          {
+            name: 'Security',
+            templates: [
+              {
+                slug: 'pr-security-scan',
+                name: 'PR Security Scan',
+                description: 'Scans pull requests for security vulnerabilities.',
+                category: 'Security',
+                icon: 'shield',
+                triggerType: 'event',
+                triggerConfig: { events: ['pull_request.opened'] },
+                promptTemplate: 'Scan the PR in {{repo.full_name}}.',
+                model: null,
+                variables: [],
+              },
+            ],
+          },
+        ],
+      },
+      requestId: 'test-request-id',
+    });
+  }),
+
+  http.post('/api/orgs/:orgId/automations/from-template', async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({
+      data: mockAutomationWithVariables({
+        id: 200,
+        name: `PR Code Review (repo-${body.repoId as number})`,
+        variables: [],
+      }),
+      requestId: 'test-request-id',
+    });
+  }),
 ];

@@ -32,6 +32,11 @@ const AutomationsListPage = lazy(() =>
     default: m.AutomationsListPage,
   })),
 );
+const AutomationNewPage = lazy(() =>
+  import('@/modules/automations/pages/automation-new').then((m) => ({
+    default: m.AutomationNewPage,
+  })),
+);
 const AutomationCreatePage = lazy(() =>
   import('@/modules/automations/pages/automation-create').then((m) => ({
     default: m.AutomationCreatePage,
@@ -164,6 +169,14 @@ const router = createBrowserRouter([
               },
               {
                 path: 'automations/new',
+                element: (
+                  <PageSuspense>
+                    <AutomationNewPage />
+                  </PageSuspense>
+                ),
+              },
+              {
+                path: 'automations/new/custom',
                 element: (
                   <PageSuspense>
                     <AutomationCreatePage />

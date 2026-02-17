@@ -95,3 +95,37 @@ export interface AutomationListFilters {
   readonly limit?: number;
   readonly offset?: number;
 }
+
+export interface CatalogVariable {
+  readonly key: string;
+  readonly value: string;
+  readonly source: VariableSource;
+  readonly required: boolean;
+}
+
+export interface CatalogTemplate {
+  readonly slug: string;
+  readonly name: string;
+  readonly description: string;
+  readonly category: string;
+  readonly icon: string;
+  readonly triggerType: TriggerType;
+  readonly triggerConfig: EventTriggerConfig | CronTriggerConfig | ManualTriggerConfig;
+  readonly promptTemplate: string;
+  readonly model: string | null;
+  readonly variables: readonly CatalogVariable[];
+}
+
+export interface CatalogCategory {
+  readonly name: string;
+  readonly templates: readonly CatalogTemplate[];
+}
+
+export interface CatalogResponse {
+  readonly categories: readonly CatalogCategory[];
+}
+
+export interface CreateFromTemplateInput {
+  readonly templateSlug: string;
+  readonly repoId: number;
+}

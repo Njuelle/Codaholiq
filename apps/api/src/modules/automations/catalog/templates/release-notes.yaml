@@ -1,0 +1,20 @@
+name: "Release Notes"
+description: "Automatically generates detailed release notes when a new release is published, based on commits and PRs since the last release."
+category: "Documentation"
+icon: "file-text"
+triggerType: "event"
+triggerConfig:
+  events:
+    - "release.published"
+promptTemplate: |
+  A new release "{{release.name}}" ({{release.tag_name}}) has been published in {{event.repo}}.
+
+  Generate comprehensive release notes:
+  1. List all commits since the previous release
+  2. Group changes by category (features, bug fixes, improvements, breaking changes)
+  3. Highlight notable changes and their impact
+  4. Credit contributors
+
+  Update the release body with the generated notes in a clean, readable markdown format.
+model: null
+variables: []

@@ -43,4 +43,7 @@ export const queryKeys = {
   models: {
     all: () => ['models'] as const,
   },
+  catalog: {
+    all: () => ['automation-catalog'] as const,
+  },
 } as const;

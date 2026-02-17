@@ -4,6 +4,12 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "builder": "tsc",
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "assets": [
+      {
+        "include": "modules/automations/catalog/templates/*.yaml",
+        "outDir": "dist"
+      }
+    ]
   }
 }

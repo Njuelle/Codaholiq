@@ -24,6 +24,10 @@ export type {
   TriggerType,
   VariableSource,
   ClaudeModel,
+  CatalogTemplate,
+  CatalogCategory,
+  CatalogResponse,
+  CreateFromTemplateInput,
 } from '@/modules/automations/types';
 export type {
   Execution,

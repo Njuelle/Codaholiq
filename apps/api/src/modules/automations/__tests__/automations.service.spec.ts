@@ -9,10 +9,18 @@ import { PromptTemplateService } from '../templates/prompt-template.service';
 import { CronSchedulerService } from '../triggers/cron-scheduler.service';
 import { SanitizationService } from '../../../common/sanitization/sanitization.service';
 import { VariablesService } from '../../variables/variables.service';
+import { CatalogService } from '../catalog/catalog.service';
 
 function createMockVariablesService() {
   return {
     findForResolution: vi.fn().mockResolvedValue([]),
+  };
+}
+
+function createMockCatalogService() {
+  return {
+    getCategories: vi.fn().mockReturnValue([]),
+    getTemplateBySlug: vi.fn(),
   };
 }
 
@@ -59,7 +67,9 @@ function createMockTriggerValidation() {
 function createMockPromptTemplate() {
   return {
     validateTemplate: vi.fn(),
+    validateVariableValues: vi.fn(),
     resolve: vi.fn().mockReturnValue('resolved prompt'),
+    extractVariables: vi.fn().mockReturnValue([]),
   };
 }
 
@@ -120,6 +130,7 @@ describe('AutomationService', () => {
   let triggerValidation: ReturnType<typeof createMockTriggerValidation>;
   let promptTemplate: ReturnType<typeof createMockPromptTemplate>;
   let cronScheduler: ReturnType<typeof createMockCronScheduler>;
+  let catalogService: ReturnType<typeof createMockCatalogService>;
   let sanitizationService: ReturnType<typeof createMockSanitizationService>;
   let variablesService: ReturnType<typeof createMockVariablesService>;
 
@@ -130,6 +141,7 @@ describe('AutomationService', () => {
     triggerValidation = createMockTriggerValidation();
     promptTemplate = createMockPromptTemplate();
     cronScheduler = createMockCronScheduler();
+    catalogService = createMockCatalogService();
     sanitizationService = createMockSanitizationService();
     variablesService = createMockVariablesService();
 
@@ -142,6 +154,7 @@ describe('AutomationService', () => {
       cronScheduler as unknown as CronSchedulerService,
       sanitizationService as unknown as SanitizationService,
       variablesService as unknown as VariablesService,
+      catalogService as unknown as CatalogService,
       { get: vi.fn().mockReturnValue(undefined) } as unknown as ConfigService,
     );
   });
@@ -653,6 +666,122 @@ describe('AutomationService', () => {
             'repo.full_name': 'octocat/hello-world',
             'automation.name': 'test-automation',
           }),
+        }),
+      );
+    });
+  });
+
+  describe('createFromTemplate', () => {
+    const mockTemplate = {
+      slug: 'pr-code-review',
+      name: 'PR Code Review',
+      description: 'Reviews pull requests.',
+      category: 'Code Quality',
+      icon: 'search-code',
+      triggerType: 'event' as const,
+      triggerConfig: { events: ['pull_request.opened'] },
+      promptTemplate: 'Review the PR in {{repo.full_name}}.',
+      model: null,
+      variables: [],
+    };
+
+    it('should create an automation from a catalog template', async () => {
+      catalogService.getTemplateBySlug.mockReturnValue(mockTemplate);
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      const created = makeAutomation({ name: 'PR Code Review (hello-world)' });
+      automationRepo.create.mockResolvedValue(created);
+
+      const result = await service.createFromTemplate({
+        orgId: 10,
+        userId: 1,
+        templateSlug: 'pr-code-review',
+        repoId: 100,
+      });
+
+      expect(result).toEqual(created);
+      expect(catalogService.getTemplateBySlug).toHaveBeenCalledWith({
+        slug: 'pr-code-review',
+      });
+      expect(automationRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'PR Code Review (hello-world)',
+          triggerType: 'event',
+          promptTemplate: 'Review the PR in {{repo.full_name}}.',
+        }),
+      );
+    });
+
+    it('should throw NotFoundException for unknown template slug', async () => {
+      catalogService.getTemplateBySlug.mockReturnValue(undefined);
+
+      await expect(
+        service.createFromTemplate({
+          orgId: 10,
+          userId: 1,
+          templateSlug: 'nonexistent',
+          repoId: 100,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should include repo name in automation name', async () => {
+      catalogService.getTemplateBySlug.mockReturnValue(mockTemplate);
+      githubRepo.findRepositoryById.mockResolvedValue(
+        makeRepo({ name: 'my-app' }),
+      );
+      automationRepo.create.mockResolvedValue(
+        makeAutomation({ name: 'PR Code Review (my-app)' }),
+      );
+
+      await service.createFromTemplate({
+        orgId: 10,
+        userId: 1,
+        templateSlug: 'pr-code-review',
+        repoId: 100,
+      });
+
+      expect(automationRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'PR Code Review (my-app)',
+        }),
+      );
+    });
+
+    it('should throw NotFoundException when repository not found', async () => {
+      catalogService.getTemplateBySlug.mockReturnValue(mockTemplate);
+      githubRepo.findRepositoryById.mockResolvedValue(undefined);
+
+      await expect(
+        service.createFromTemplate({
+          orgId: 10,
+          userId: 1,
+          templateSlug: 'pr-code-review',
+          repoId: 100,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should pass template variables to create', async () => {
+      const templateWithVars = {
+        ...mockTemplate,
+        variables: [
+          { key: 'depth', value: 'thorough', source: 'static' as const, required: false },
+        ],
+      };
+      catalogService.getTemplateBySlug.mockReturnValue(templateWithVars);
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      automationRepo.create.mockResolvedValue(makeAutomation());
+
+      await service.createFromTemplate({
+        orgId: 10,
+        userId: 1,
+        templateSlug: 'pr-code-review',
+        repoId: 100,
+      });
+
+      expect(automationRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variables: [{ key: 'depth', value: 'thorough', source: 'static', required: false }],
         }),
       );
     });

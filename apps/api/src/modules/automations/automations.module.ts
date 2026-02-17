@@ -7,6 +7,8 @@ import { VariablesModule } from '../variables/variables.module';
 import { AutomationsController } from './automations.controller';
 import { GitHubEventsController } from './triggers/github-events.controller';
 import { ModelsController } from './models.controller';
+import { CatalogController } from './catalog/catalog.controller';
+import { CatalogService } from './catalog/catalog.service';
 import { AutomationRepository } from './automations.repository';
 import { AutomationService } from './automations.service';
 import { TriggerValidationService } from './triggers/trigger-validation.service';
@@ -26,7 +28,7 @@ import { JobFailureTrackerService } from '../../common/monitoring/job-failure-tr
     forwardRef(() => OrganizationsModule),
     VariablesModule,
   ],
-  controllers: [AutomationsController, GitHubEventsController, ModelsController],
+  controllers: [AutomationsController, GitHubEventsController, ModelsController, CatalogController],
   providers: [
     AutomationRepository,
     AutomationService,
@@ -37,6 +39,7 @@ import { JobFailureTrackerService } from '../../common/monitoring/job-failure-tr
     CronSchedulerService,
     CronTriggerProcessor,
     JobFailureTrackerService,
+    CatalogService,
   ],
   exports: [AutomationRepository, AutomationService, EventMatcherService, PromptTemplateService],
 })

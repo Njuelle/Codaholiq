@@ -23,6 +23,10 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AutomationService } from './automations.service';
 import { AutomationCreateSchema, AutomationCreateDto } from './dto/create-automation.dto';
+import {
+  CreateFromTemplateSchema,
+  CreateFromTemplateDto,
+} from './dto/create-from-template.dto';
 import { AutomationUpdateSchema, AutomationUpdateDto } from './dto/update-automation.dto';
 import { ManualTriggerSchema, ManualTriggerDto } from './dto/manual-trigger.dto';
 import { ValidatePromptSchema, ValidatePromptDto } from './dto/validate-prompt.dto';
@@ -53,6 +57,23 @@ export class AutomationsController {
       orgId,
       userId: user.sub,
       dto,
+    });
+  }
+
+  @Post('from-template')
+  @RequirePermission(Permission.AUTOMATIONS_CREATE)
+  @Audit({ action: 'automation.created', resourceType: 'automation' })
+  async createFromTemplate(
+    @Param('orgId', ParseIntPipe) orgId: number,
+    @CurrentUser() user: JwtPayload,
+    @Body(new ZodValidationPipe(CreateFromTemplateSchema))
+    dto: CreateFromTemplateDto,
+  ): Promise<AutomationWithVariables> {
+    return this.automationService.createFromTemplate({
+      orgId,
+      userId: user.sub,
+      templateSlug: dto.templateSlug,
+      repoId: dto.repoId,
     });
   }
 

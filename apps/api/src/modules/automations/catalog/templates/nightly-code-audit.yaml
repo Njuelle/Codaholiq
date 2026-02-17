@@ -1,0 +1,24 @@
+name: "Nightly Code Audit"
+description: "Runs a comprehensive code audit every night, checking for code smells, technical debt, and improvement opportunities."
+category: "Code Quality"
+icon: "clock"
+triggerType: "cron"
+triggerConfig:
+  schedule: "0 2 * * *"
+promptTemplate: |
+  Perform a comprehensive code audit of {{repo.full_name}}.
+
+  Audit started at {{timestamp}} by automation "{{automation.name}}".
+
+  Review the codebase for:
+  - Code smells and anti-patterns
+  - Unused dependencies or dead code
+  - Missing error handling
+  - Outdated patterns that could be modernized
+  - Test coverage gaps
+  - Documentation that is missing or outdated
+
+  Create an issue summarizing your findings, prioritized by impact.
+  If there are quick wins, open a pull request with the fixes.
+model: null
+variables: []

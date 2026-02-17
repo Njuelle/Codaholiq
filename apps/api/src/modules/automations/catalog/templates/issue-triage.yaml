@@ -1,0 +1,24 @@
+name: "Issue Triage"
+description: "Automatically labels, categorizes, and prioritizes newly opened issues based on their content."
+category: "Project Management"
+icon: "tag"
+triggerType: "event"
+triggerConfig:
+  events:
+    - "issues.opened"
+promptTemplate: |
+  Triage issue #{{event.number}} in {{event.repo}}.
+
+  Issue title: {{event.title}}
+  Issue body: {{event.body}}
+
+  Based on the issue content:
+  1. Categorize it (bug, feature request, question, documentation, etc.)
+  2. Assess priority (critical, high, medium, low)
+  3. Add appropriate labels
+  4. If it's a bug report, check if enough information is provided and request missing details
+  5. Leave a welcome comment acknowledging the issue
+
+  Be helpful and welcoming to encourage contributions.
+model: null
+variables: []
