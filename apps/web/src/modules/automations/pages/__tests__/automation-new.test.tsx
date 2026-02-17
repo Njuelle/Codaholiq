@@ -25,9 +25,7 @@ describe('AutomationNewPage', () => {
   it('should render the page heading', async () => {
     renderPage();
 
-    expect(
-      await screen.findByRole('heading', { name: 'New Automation' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'New Automation' })).toBeInTheDocument();
   });
 
   it('should render catalog category names with template counts', async () => {
@@ -97,6 +95,57 @@ describe('AutomationNewPage', () => {
     await waitFor(() => {
       expect(screen.queryByText('Code Quality')).not.toBeInTheDocument();
     });
+  });
+
+  it('should filter templates by name when searching', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Code Quality');
+
+    const searchInput = screen.getByPlaceholderText('Search templates...');
+    await user.type(searchInput, 'security');
+
+    expect(screen.getByText('Security')).toBeInTheDocument();
+    expect(screen.queryByText('Code Quality')).not.toBeInTheDocument();
+  });
+
+  it('should show all category templates when search matches category name', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Code Quality');
+
+    const searchInput = screen.getByPlaceholderText('Search templates...');
+    await user.type(searchInput, 'Code Quality');
+
+    expect(screen.getByText('PR Code Review')).toBeInTheDocument();
+  });
+
+  it('should show no results message when search has no matches', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Code Quality');
+
+    const searchInput = screen.getByPlaceholderText('Search templates...');
+    await user.type(searchInput, 'nonexistent');
+
+    expect(screen.getByText('No templates match your search.')).toBeInTheDocument();
+  });
+
+  it('should auto-expand categories when searching', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Code Quality');
+
+    const searchInput = screen.getByPlaceholderText('Search templates...');
+    await user.type(searchInput, 'PR');
+
+    // Templates should be visible without clicking the category
+    expect(screen.getByText('PR Code Review')).toBeInTheDocument();
+    expect(screen.getByText('PR Security Scan')).toBeInTheDocument();
   });
 
   it('should close dialog when cancel is clicked', async () => {

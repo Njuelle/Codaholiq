@@ -1,11 +1,11 @@
-name: "Issue Triage"
-description: "Automatically labels, categorizes, and prioritizes newly opened issues based on their content."
-category: "Project Management"
-icon: "tag"
-triggerType: "event"
+name: 'Issue Triage'
+description: 'Automatically labels, categorizes, and prioritizes newly opened issues based on their content.'
+category: 'Project Management'
+icon: 'tag'
+triggerType: 'event'
 triggerConfig:
   events:
-    - "issues.opened"
+    - 'issues.opened'
 promptTemplate: |
   Triage issue #{{event.number}} in {{event.repo}}.
 

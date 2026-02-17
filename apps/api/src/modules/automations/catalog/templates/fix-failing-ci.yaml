@@ -1,16 +1,16 @@
-name: "Fix Failing CI"
-description: "Automatically investigates and fixes failing CI workflows by analyzing error logs and creating fix PRs."
-category: "CI/CD"
-icon: "wrench"
-triggerType: "event"
+name: 'Fix Failing CI'
+description: 'Automatically investigates and fixes failing CI workflows by analyzing error logs and creating fix PRs.'
+category: 'CI/CD'
+icon: 'wrench'
+triggerType: 'event'
 triggerConfig:
   events:
-    - "workflow_run.completed"
+    - 'workflow_run.completed'
   conditionGroups:
     - conditions:
-        - path: "conclusion"
-          operator: "equals"
-          value: "failure"
+        - path: 'conclusion'
+          operator: 'equals'
+          value: 'failure'
 promptTemplate: |
   The workflow "{{workflow_run.name}}" has failed on branch {{workflow_run.head_branch}} in {{event.repo}}.
 

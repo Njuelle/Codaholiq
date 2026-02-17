@@ -20,9 +20,7 @@ const mockTemplate: CatalogTemplate = {
 describe('CatalogTemplateCard', () => {
   it('should render template name and description', () => {
     const onSelect = vi.fn();
-    renderWithProviders(
-      <CatalogTemplateCard template={mockTemplate} onSelect={onSelect} />,
-    );
+    renderWithProviders(<CatalogTemplateCard template={mockTemplate} onSelect={onSelect} />);
 
     expect(screen.getByText('PR Code Review')).toBeInTheDocument();
     expect(
@@ -32,9 +30,7 @@ describe('CatalogTemplateCard', () => {
 
   it('should render trigger type badge', () => {
     const onSelect = vi.fn();
-    renderWithProviders(
-      <CatalogTemplateCard template={mockTemplate} onSelect={onSelect} />,
-    );
+    renderWithProviders(<CatalogTemplateCard template={mockTemplate} onSelect={onSelect} />);
 
     expect(screen.getByText('Event')).toBeInTheDocument();
   });
@@ -46,9 +42,7 @@ describe('CatalogTemplateCard', () => {
       triggerConfig: { schedule: '0 2 * * *' },
     };
     const onSelect = vi.fn();
-    renderWithProviders(
-      <CatalogTemplateCard template={cronTemplate} onSelect={onSelect} />,
-    );
+    renderWithProviders(<CatalogTemplateCard template={cronTemplate} onSelect={onSelect} />);
 
     expect(screen.getByText('Scheduled')).toBeInTheDocument();
   });
@@ -56,9 +50,7 @@ describe('CatalogTemplateCard', () => {
   it('should call onSelect when clicked', async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
-    renderWithProviders(
-      <CatalogTemplateCard template={mockTemplate} onSelect={onSelect} />,
-    );
+    renderWithProviders(<CatalogTemplateCard template={mockTemplate} onSelect={onSelect} />);
 
     await user.click(screen.getByText('PR Code Review'));
 
@@ -68,9 +60,7 @@ describe('CatalogTemplateCard', () => {
   it('should call onSelect on Enter key press', async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
-    renderWithProviders(
-      <CatalogTemplateCard template={mockTemplate} onSelect={onSelect} />,
-    );
+    renderWithProviders(<CatalogTemplateCard template={mockTemplate} onSelect={onSelect} />);
 
     const card = screen.getByRole('button');
     card.focus();

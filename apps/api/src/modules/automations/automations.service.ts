@@ -153,7 +153,12 @@ export class AutomationService {
       promptTemplate: string;
       model?: string | null;
       enabled: boolean;
-      variables?: { key: string; value: string; source: 'static' | 'event_payload'; required: boolean }[];
+      variables?: {
+        key: string;
+        value: string;
+        source: 'static' | 'event_payload';
+        required: boolean;
+      }[];
     };
   }): Promise<AutomationWithVariables> {
     this.validateTriggerConfig({

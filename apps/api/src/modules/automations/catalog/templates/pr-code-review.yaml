@@ -1,12 +1,12 @@
-name: "PR Code Review"
-description: "Automatically reviews pull requests for code quality, best practices, and potential bugs. Provides constructive feedback as PR review comments."
-category: "Code Quality"
-icon: "search-code"
-triggerType: "event"
+name: 'PR Code Review'
+description: 'Automatically reviews pull requests for code quality, best practices, and potential bugs. Provides constructive feedback as PR review comments.'
+category: 'Code Quality'
+icon: 'search-code'
+triggerType: 'event'
 triggerConfig:
   events:
-    - "pull_request.opened"
-    - "pull_request.synchronize"
+    - 'pull_request.opened'
+    - 'pull_request.synchronize'
 promptTemplate: |
   Review pull request #{{event.number}} in {{event.repo}}.
 

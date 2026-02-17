@@ -1,10 +1,10 @@
-name: "Nightly Code Audit"
-description: "Runs a comprehensive code audit every night, checking for code smells, technical debt, and improvement opportunities."
-category: "Code Quality"
-icon: "clock"
-triggerType: "cron"
+name: 'Nightly Code Audit'
+description: 'Runs a comprehensive code audit every night, checking for code smells, technical debt, and improvement opportunities.'
+category: 'Code Quality'
+icon: 'clock'
+triggerType: 'cron'
 triggerConfig:
-  schedule: "0 2 * * *"
+  schedule: '0 2 * * *'
 promptTemplate: |
   Perform a comprehensive code audit of {{repo.full_name}}.
 

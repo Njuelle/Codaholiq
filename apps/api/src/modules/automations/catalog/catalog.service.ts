@@ -37,9 +37,7 @@ export class CatalogService implements OnModuleInit {
         const result = CatalogTemplateYamlSchema.safeParse(parsed);
 
         if (!result.success) {
-          this.logger.error(
-            `Invalid catalog template "${file}": ${result.error.message}`,
-          );
+          this.logger.error(`Invalid catalog template "${file}": ${result.error.message}`);
           continue;
         }
 
@@ -62,9 +60,7 @@ export class CatalogService implements OnModuleInit {
     );
   }
 
-  private groupByCategory(
-    templates: CatalogTemplate[],
-  ): readonly CatalogCategory[] {
+  private groupByCategory(templates: CatalogTemplate[]): readonly CatalogCategory[] {
     const grouped = new Map<string, CatalogTemplate[]>();
 
     for (const template of templates) {

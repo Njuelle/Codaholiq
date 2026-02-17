@@ -30,10 +30,9 @@ describe('useCreateFromTemplate', () => {
   });
 
   it('should navigate to automation detail on success', async () => {
-    const { result } = renderHook(
-      () => useCreateFromTemplate({ orgId: 1 }),
-      { wrapper: createWrapper() },
-    );
+    const { result } = renderHook(() => useCreateFromTemplate({ orgId: 1 }), {
+      wrapper: createWrapper(),
+    });
 
     act(() => {
       result.current.mutate({ templateSlug: 'pr-code-review', repoId: 1 });
@@ -53,10 +52,9 @@ describe('useCreateFromTemplate', () => {
       }),
     );
 
-    const { result } = renderHook(
-      () => useCreateFromTemplate({ orgId: 1 }),
-      { wrapper: createWrapper() },
-    );
+    const { result } = renderHook(() => useCreateFromTemplate({ orgId: 1 }), {
+      wrapper: createWrapper(),
+    });
 
     act(() => {
       result.current.mutate({ templateSlug: 'bad', repoId: 1 });

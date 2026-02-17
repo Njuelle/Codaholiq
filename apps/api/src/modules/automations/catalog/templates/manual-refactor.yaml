@@ -1,8 +1,8 @@
-name: "Code Refactor"
-description: "On-demand code refactoring. Analyzes the codebase and applies improvements for better readability, maintainability, and performance."
-category: "Code Quality"
-icon: "git-pull-request"
-triggerType: "manual"
+name: 'Code Refactor'
+description: 'On-demand code refactoring. Analyzes the codebase and applies improvements for better readability, maintainability, and performance.'
+category: 'Code Quality'
+icon: 'git-pull-request'
+triggerType: 'manual'
 triggerConfig: {}
 promptTemplate: |
   Analyze the codebase of {{repo.full_name}} and perform refactoring.

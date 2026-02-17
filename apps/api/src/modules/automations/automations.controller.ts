@@ -23,10 +23,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AutomationService } from './automations.service';
 import { AutomationCreateSchema, AutomationCreateDto } from './dto/create-automation.dto';
-import {
-  CreateFromTemplateSchema,
-  CreateFromTemplateDto,
-} from './dto/create-from-template.dto';
+import { CreateFromTemplateSchema, CreateFromTemplateDto } from './dto/create-from-template.dto';
 import { AutomationUpdateSchema, AutomationUpdateDto } from './dto/update-automation.dto';
 import { ManualTriggerSchema, ManualTriggerDto } from './dto/manual-trigger.dto';
 import { ValidatePromptSchema, ValidatePromptDto } from './dto/validate-prompt.dto';

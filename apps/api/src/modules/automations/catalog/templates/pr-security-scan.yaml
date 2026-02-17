@@ -1,12 +1,12 @@
-name: "PR Security Scan"
-description: "Scans pull requests for security vulnerabilities, insecure patterns, and potential data exposure risks."
-category: "Security"
-icon: "shield"
-triggerType: "event"
+name: 'PR Security Scan'
+description: 'Scans pull requests for security vulnerabilities, insecure patterns, and potential data exposure risks.'
+category: 'Security'
+icon: 'shield'
+triggerType: 'event'
 triggerConfig:
   events:
-    - "pull_request.opened"
-    - "pull_request.synchronize"
+    - 'pull_request.opened'
+    - 'pull_request.synchronize'
 promptTemplate: |
   Perform a security review of pull request #{{event.number}} in {{event.repo}}.
 

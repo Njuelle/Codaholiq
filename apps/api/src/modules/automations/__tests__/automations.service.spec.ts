@@ -726,12 +726,8 @@ describe('AutomationService', () => {
 
     it('should include repo name in automation name', async () => {
       catalogService.getTemplateBySlug.mockReturnValue(mockTemplate);
-      githubRepo.findRepositoryById.mockResolvedValue(
-        makeRepo({ name: 'my-app' }),
-      );
-      automationRepo.create.mockResolvedValue(
-        makeAutomation({ name: 'PR Code Review (my-app)' }),
-      );
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo({ name: 'my-app' }));
+      automationRepo.create.mockResolvedValue(makeAutomation({ name: 'PR Code Review (my-app)' }));
 
       await service.createFromTemplate({
         orgId: 10,

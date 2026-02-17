@@ -31,9 +31,7 @@ describe('CatalogController', () => {
       getCategories: vi.fn().mockReturnValue(mockCategories),
     };
 
-    controller = new CatalogController(
-      catalogService as unknown as CatalogService,
-    );
+    controller = new CatalogController(catalogService as unknown as CatalogService);
   });
 
   describe('getCategories', () => {

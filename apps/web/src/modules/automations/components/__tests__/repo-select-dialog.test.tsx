@@ -32,10 +32,10 @@ function renderDialog(
     isLoading: false,
   };
 
-  return renderWithProviders(
-    <RepoSelectDialog {...defaults} {...overrides} />,
-    { user: testUser, org: testOrg },
-  );
+  return renderWithProviders(<RepoSelectDialog {...defaults} {...overrides} />, {
+    user: testUser,
+    org: testOrg,
+  });
 }
 
 describe('RepoSelectDialog', () => {

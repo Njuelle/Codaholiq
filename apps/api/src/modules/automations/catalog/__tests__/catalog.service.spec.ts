@@ -89,13 +89,8 @@ describe('CatalogService', () => {
 
     it('should skip invalid YAML templates without crashing', () => {
       mockExistsSync.mockReturnValue(true);
-      mockReaddirSync.mockReturnValue([
-        'valid.yaml' as never,
-        'invalid.yaml' as never,
-      ]);
-      mockReadFileSync
-        .mockReturnValueOnce(validEventTemplate)
-        .mockReturnValueOnce(invalidTemplate);
+      mockReaddirSync.mockReturnValue(['valid.yaml' as never, 'invalid.yaml' as never]);
+      mockReadFileSync.mockReturnValueOnce(validEventTemplate).mockReturnValueOnce(invalidTemplate);
 
       service.onModuleInit();
 
@@ -128,9 +123,7 @@ describe('CatalogService', () => {
 
     it('should handle file read errors gracefully', () => {
       mockExistsSync.mockReturnValue(true);
-      mockReaddirSync.mockReturnValue([
-        'error.yaml' as never,
-      ]);
+      mockReaddirSync.mockReturnValue(['error.yaml' as never]);
       mockReadFileSync.mockImplementation(() => {
         throw new Error('Permission denied');
       });
@@ -164,9 +157,7 @@ describe('CatalogService', () => {
   describe('getTemplateBySlug', () => {
     beforeEach(() => {
       mockExistsSync.mockReturnValue(true);
-      mockReaddirSync.mockReturnValue([
-        'pr-code-review.yaml' as never,
-      ]);
+      mockReaddirSync.mockReturnValue(['pr-code-review.yaml' as never]);
       mockReadFileSync.mockReturnValueOnce(validEventTemplate);
       service.onModuleInit();
     });
@@ -214,9 +205,7 @@ variables:
 `;
 
       mockExistsSync.mockReturnValue(true);
-      mockReaddirSync.mockReturnValue([
-        'review.yaml' as never,
-      ]);
+      mockReaddirSync.mockReturnValue(['review.yaml' as never]);
       mockReadFileSync.mockReturnValueOnce(templateWithVars);
 
       service.onModuleInit();
@@ -228,9 +217,7 @@ variables:
 
     it('should accept .yml extension', () => {
       mockExistsSync.mockReturnValue(true);
-      mockReaddirSync.mockReturnValue([
-        'template.yml' as never,
-      ]);
+      mockReaddirSync.mockReturnValue(['template.yml' as never]);
       mockReadFileSync.mockReturnValueOnce(validEventTemplate);
 
       service.onModuleInit();
