@@ -1,5 +1,5 @@
 name: 'Auto-Generate Tests'
-description: 'Analyzes PR changes for untested code and generates idiomatic test files matching the project''s existing patterns and framework.'
+description: "Analyzes PR changes for untested code and generates idiomatic test files matching the project's existing patterns and framework."
 category: 'Code Quality'
 icon: 'test-tubes'
 triggerType: 'event'
