@@ -1,0 +1,67 @@
+name: 'Merge Conflict Resolver'
+description: 'Daily scan that finds open PRs with merge conflicts, resolves simple ones, and posts resolution guidance for complex conflicts.'
+category: 'Developer Experience'
+icon: 'git-merge'
+triggerType: 'cron'
+triggerConfig:
+  schedule: '0 9 * * *'
+promptTemplate: |
+  Scan {{repo.full_name}} for open pull requests with merge conflicts and help resolve them.
+  Triggered at {{timestamp}} by "{{automation.name}}".
+
+  ## Process
+
+  ### 1. Find conflicted PRs
+  - List all open PRs: `gh pr list --state open --json number,title,headRefName,baseRefName,mergeable,author,isDraft`
+  - Filter for PRs where `mergeable` is `CONFLICTING`
+  - Skip draft PRs — their authors may still be working on them
+  - If no PRs have conflicts, do nothing and stop
+  - **Limit to 3 PRs per run** to avoid timeouts
+
+  ### 2. For each conflicted PR
+
+  #### a. Understand the context
+  - Read the PR description and recent commits to understand the intent of the changes
+  - Determine the base branch from the PR metadata (`baseRefName`)
+  - Check out the PR branch and attempt `git merge origin/<baseRefName>` to see the conflict markers
+  - For each conflicted file, read both sides:
+    - The PR's version (what the author intended)
+    - The base branch version (what changed since the PR was created)
+
+  #### b. Assess conflict complexity
+  Classify each conflict:
+  - **Simple** — non-overlapping changes in the same file, lock file conflicts, or generated files
+  - **Moderate** — both sides added different items to a list, import changes, or config additions
+  - **Complex** — overlapping logic changes where intent is ambiguous
+
+  #### c. Resolve simple and moderate conflicts
+  - **Non-overlapping changes:** merge both changes
+  - **Lock files** (package-lock.json, yarn.lock): regenerate by running the install command after resolving package.json conflicts
+  - **Generated files** (compiled output, auto-generated code): regenerate rather than manually merging
+  - **List additions:** merge both additions
+  - **NEVER silently drop changes** from either side — if you can't confidently resolve, leave it for the author
+
+  #### d. Verify the resolution
+  - Run the project's test suite after resolving conflicts
+  - If tests fail, the resolution may be incorrect — revert and skip this PR
+  - Run the linter/formatter to ensure the merged code follows conventions
+
+  #### e. Push the resolution
+  - Commit with message: "chore: resolve merge conflicts with <baseRefName>" (use the actual base branch name from the PR metadata)
+  - Push to the PR branch
+  - Leave a comment on the PR explaining what conflicts were resolved and how
+
+  #### f. For complex conflicts (cannot auto-resolve)
+  Do NOT push anything. Instead, leave a helpful comment on the PR:
+  - List which files have conflicts
+  - Describe what both sides changed
+  - Suggest how the author might resolve each conflict
+  - Provide the git commands to resolve manually
+
+  ### 3. Summary
+  If any PRs were processed, post a summary as a comment on the last resolved PR:
+  - PRs with conflicts found: X
+  - Successfully resolved: Y
+  - Guidance posted (complex conflicts): Z — list which PRs and why
+model: null
+variables: []

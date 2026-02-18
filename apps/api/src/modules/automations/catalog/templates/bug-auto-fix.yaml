@@ -1,0 +1,60 @@
+name: 'Bug Auto-Fix'
+description: 'When an issue is labeled as a bug, automatically investigates the codebase, identifies the root cause, and opens a fix PR.'
+category: 'Code Quality'
+icon: 'bug'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'issues.labeled'
+  conditionGroups:
+    - conditions:
+        - path: 'label.name'
+          operator: 'equals'
+          value: 'bug'
+promptTemplate: |
+  Issue #{{event.number}} in {{event.repo}} has been labeled as a bug.
+
+  **Title:** {{event.title}}
+  **Body:** {{event.body}}
+
+  ## Investigation and fix
+
+  ### 1. Understand the bug report
+  - Parse the issue for: what the expected behavior is, what the actual behavior is, and any reproduction steps provided
+  - Identify key details: error messages, affected features, specific inputs that trigger the issue
+  - If the issue lacks critical information (no repro steps, no expected/actual behavior), post a comment asking for clarification and stop
+
+  ### 2. Locate the relevant code
+  - Search the codebase for keywords from the issue: function names, error messages, feature names, file paths mentioned
+  - Trace the code path that handles the described feature or behavior
+  - Read the relevant source files to understand the current implementation
+
+  ### 3. Identify the root cause
+  - Based on the bug description and the code, determine what's going wrong
+  - Check recent commits to the affected files — was this a regression? Use `git log --oneline -20 -- <file>`
+  - Look for common bug patterns: off-by-one errors, null/undefined handling, race conditions, incorrect conditional logic, missing edge case handling
+
+  ### 4. Write the fix
+  - Make the minimum change necessary to fix the bug
+  - Ensure the fix handles edge cases, not just the specific scenario described
+  - Do NOT introduce new patterns or refactor surrounding code — focus only on the bug
+
+  ### 5. Add a regression test
+  - Write a test that fails without the fix and passes with it
+  - Follow the project's existing test patterns and conventions
+  - The test should directly exercise the buggy behavior described in the issue
+
+  ### 6. Verify
+  - Run the project's test suite to ensure no regressions
+  - If the issue includes reproduction steps, verify the fix addresses them
+
+  ### 7. Open a pull request
+  - Title: "fix: [concise description of what was fixed]"
+  - In the PR body, include:
+    - **Bug:** link to the issue with `Closes #{{event.number}}`
+    - **Root cause:** what was wrong and why
+    - **Fix:** what was changed and how it resolves the issue
+    - **Testing:** what test was added and what it covers
+  - Request review from the author of the code that contained the bug (via `git blame`)
+model: null
+variables: []

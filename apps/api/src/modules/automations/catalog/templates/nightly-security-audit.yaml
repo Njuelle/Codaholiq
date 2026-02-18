@@ -1,0 +1,92 @@
+name: 'Nightly Security Audit'
+description: 'Comprehensive nightly security sweep — dependency vulnerabilities, leaked secrets, dangerous code patterns, and configuration hygiene.'
+category: 'Security'
+icon: 'shield-check'
+triggerType: 'cron'
+triggerConfig:
+  schedule: '0 3 * * *'
+promptTemplate: |
+  Perform a comprehensive security audit of {{repo.full_name}}.
+  Triggered at {{timestamp}} by "{{automation.name}}".
+
+  ## Security audit checklist
+
+  Run each check and collect findings with severity ratings.
+
+  ### 1. Dependency vulnerabilities
+  - Run the package manager's audit command: `npm audit --json`, `yarn audit --json`, `pip-audit`, `cargo audit`, etc.
+  - Record each vulnerability: package name, severity (critical/high/medium/low), CVE ID, description, and whether a fix is available
+  - Check if the lock file is in sync with the manifest (outdated lock file = potential security drift)
+
+  ### 2. Secret scanning
+  Search the entire codebase (excluding dependency directories like `node_modules/`, `vendor/`, `target/`, `.git/`, and build output) for:
+  - **API keys** — strings matching patterns like `sk-...`, `pk_...`, `AKIA...`, `ghp_...`, `glpat-...`, `xoxb-...`
+  - **Connection strings** — `postgres://`, `mysql://`, `mongodb://`, `redis://` with embedded credentials
+  - **Private keys** — files containing `-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----`
+  - **Hardcoded passwords** — assignments like `password = "..."`, `secret: "..."`, `token = "..."`
+  - **High-entropy strings** — long random strings (40+ chars) in source files that aren't hashes or test fixtures
+  - Verify that `.env`, `.env.*`, and credential files are in `.gitignore`
+
+  ### 3. Dangerous code patterns
+  Detect the project's language(s) and search for relevant security-sensitive patterns:
+
+  **Code injection:**
+  - `eval(`, `exec(`, `system(`, `Function(`, `new Function` — arbitrary code execution
+  - `subprocess.call(shell=True)` (Python), `os.system()` (Python), backtick execution (Ruby/shell)
+
+  **XSS (web projects):**
+  - `innerHTML`, `dangerouslySetInnerHTML` (React), `v-html` (Vue), `[innerHTML]` (Angular), `document.write`, `|safe` (Django/Jinja2)
+
+  **SQL injection:**
+  - String concatenation or interpolation in SQL queries — `query("SELECT * FROM " + ...)`, f-strings in SQL, `format!` in SQL
+
+  **Path traversal:**
+  - File operations using user-controlled paths without validation (e.g., `open(user_input)`, `fs.readFile(user_input)`)
+
+  **Weak cryptography:**
+  - MD5 or SHA1 used for security purposes (e.g., `hashlib.md5`, `crypto.createHash('md5')`, `Digest::MD5`)
+  - Non-cryptographic random generators used for secrets (e.g., `Math.random()`, `random.random()`, `rand()`)
+
+  **Insecure transport:**
+  - `http://` URLs in production code
+
+  For each finding, check context — some of these are acceptable in test files, development tools, or with proper sanitization.
+
+  ### 4. Configuration security
+  - **CORS configuration** — check for `origin: '*'` or overly permissive CORS settings
+  - **Security headers** — check for security header middleware (Helmet, secure-headers gem, Django SecurityMiddleware, etc.). Are CSP, HSTS, X-Frame-Options configured?
+  - **Rate limiting** — are API endpoints protected against abuse?
+  - **Authentication** — are all sensitive endpoints behind authentication middleware?
+  - **Cookie settings** — are cookies set with `httpOnly`, `secure`, `sameSite`?
+
+  ### 5. File permissions and exposure
+  - Check for sensitive files that shouldn't be in version control: `*.pem`, `*.key`, `*.p12`, `*.keystore`, `credentials.json`, `service-account.json`
+  - Verify `.gitignore` covers common sensitive patterns
+  - Check for overly permissive file permissions in deployment configs
+
+  ## Output
+
+  Create a GitHub issue titled "Security Audit Report — {{timestamp}}" with:
+
+  ### Summary dashboard
+  - Critical findings: X
+  - High findings: X
+  - Medium findings: X
+  - Low findings: X
+  - Dependencies with known CVEs: X
+
+  ### Detailed findings
+  Group by severity, then by category. For each finding:
+  - File and line number
+  - Description of the risk
+  - Recommended remediation
+
+  ### Trend comparison
+  If a previous security audit issue exists, compare findings:
+  - New issues since last audit
+  - Resolved issues since last audit
+  - Recurring issues (flagged multiple times)
+
+  Label the issue with `security` and `audit`. If there are critical findings, also label with `urgent`.
+model: null
+variables: []

@@ -1,0 +1,55 @@
+name: 'Auto-Label PRs'
+description: 'Automatically labels pull requests by area (frontend, backend, docs, tests) and size (S/M/L/XL) based on the changed files.'
+category: 'Project Management'
+icon: 'tags'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'pull_request.opened'
+promptTemplate: |
+  A new pull request #{{event.number}} was opened in {{event.repo}}.
+
+  **Title:** {{event.title}}
+  **Author:** {{pull_request.user.login}}
+
+  ## Auto-labeling process
+
+  ### 1. Read existing labels
+  First, check what labels already exist in this repository: `gh label list`
+  You will ONLY use labels that already exist — do NOT create new labels.
+
+  ### 2. Analyze the changed files
+  - Get the list of changed files: `gh pr view {{event.number}} --json files`
+  - Get the diff stats: `gh pr view {{event.number}} --json additions,deletions,changedFiles`
+
+  ### 3. Determine area labels
+  Based on file paths, match against these common patterns (adapt to the repo's actual structure and label names):
+
+  - **frontend** — changes in UI/view directories (`src/components/`, `src/pages/`, `apps/web/`, `client/`, `templates/`, `static/`) or frontend file types (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`, `*.html`)
+  - **backend** — changes in server/API directories (`src/api/`, `src/server/`, `src/modules/`, `apps/api/`, `server/`, `app/`, `internal/`, `pkg/`) or backend file types (`*.controller.*`, `*.service.*`, `*.handler.*`, `*.resolver.*`)
+  - **database** — changes in migration directories or schema files (`migrations/`, `db/migrate/`, `alembic/`, `prisma/`, `drizzle/`, `*.schema.*`, `*.migration.*`)
+  - **docs** — changes in `docs/`, `*.md`, `README*`, `CONTRIBUTING*`, `CHANGELOG*`
+  - **tests** — changes in `__tests__/`, `*.test.*`, `*.spec.*`, `test/`, `tests/`, `*_test.go`, `*_test.rb`
+  - **ci** — changes in `.github/workflows/`, `.gitlab-ci.yml`, `Dockerfile`, `docker-compose*`, `.circleci/`, `Makefile`
+  - **dependencies** — changes to dependency manifests or lock files (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `go.sum`, `Pipfile.lock`, `poetry.lock`, `Gemfile.lock`)
+
+  Only apply labels from the list above if a matching label (or similar name) already exists in the repo. Skip any area that has no corresponding label.
+
+  ### 4. Determine size label
+  Based on the total lines changed (additions + deletions), look for existing size labels:
+  - **size/S** — 1-50 lines changed
+  - **size/M** — 51-200 lines changed
+  - **size/L** — 201-500 lines changed
+  - **size/XL** — 500+ lines changed
+
+  Only apply size labels if the repo already has them. If no size labels exist, skip this step.
+
+  For XL PRs, also leave a comment suggesting the PR might benefit from being split into smaller, focused PRs (but keep it friendly — it's a suggestion, not a demand).
+
+  ### 5. Apply labels
+  Apply all determined labels at once: `gh pr edit {{event.number}} --add-label "label1,label2,label3"`
+
+  Do NOT remove any labels that were already manually applied by the author.
+  If no matching labels exist in the repo, do nothing — do not create labels.
+model: null
+variables: []

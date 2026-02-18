@@ -1,0 +1,52 @@
+name: 'Changelog Update'
+description: 'Automatically updates CHANGELOG.md when pull requests are merged to the default branch, following the Keep a Changelog format.'
+category: 'Documentation'
+icon: 'scroll-text'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'pull_request.closed'
+  conditionGroups:
+    - conditions:
+        - path: 'pull_request.merged'
+          operator: 'equals'
+          value: 'true'
+        - path: 'pull_request.title'
+          operator: 'not_contains'
+          value: '[skip changelog]'
+promptTemplate: |
+  A pull request has been merged in {{event.repo}}: #{{event.number}} — "{{event.title}}".
+
+  ## Process
+
+  ### 1. Determine if a changelog update is needed
+  - Check if a `CHANGELOG.md` file exists in the repository root
+  - Read the merged PR's title, description, and diff with `gh pr diff {{event.number}}` to understand the changes
+  - Skip if the PR is purely internal: CI config changes, changelog-only updates, merge commits, or dependency bumps (unless they fix security issues)
+
+  ### 2. Categorize the changes
+  Categorize the PR's changes following [Keep a Changelog](https://keepachangelog.com/) format:
+    - **Added** — new features or capabilities (look for `feat:`, `add:`, `feature` in title/commits)
+    - **Changed** — modifications to existing functionality (look for `change:`, `update:`, `refactor:`, `improve:`)
+    - **Deprecated** — features that will be removed (look for `deprecate:`)
+    - **Removed** — removed features or files (look for `remove:`, `delete:`)
+    - **Fixed** — bug fixes (look for `fix:`, `bug:`, `patch:`, `resolve:`)
+    - **Security** — vulnerability fixes (look for `security:`, `vuln:`, `CVE`)
+
+  ### 3. Update the changelog
+  If `CHANGELOG.md` exists:
+  - Read the current file
+  - Find or create an `## [Unreleased]` section at the top (below the title)
+  - Add new entries under the appropriate category headings within the Unreleased section
+  - Preserve all existing content below
+  - Each entry should be a clear, user-facing description with a reference to the PR (#{{event.number}})
+
+  If `CHANGELOG.md` doesn't exist, create one with the appropriate header and the new entries.
+
+  ### 4. Open a PR
+  - Create a branch and PR titled: "docs: update changelog for #{{event.number}} [skip changelog]"
+  - The `[skip changelog]` tag in the title prevents this automation from re-triggering on its own PRs
+  - Keep the PR body simple: list the new entries that were added
+  - If a changelog update PR already exists and is open, update that branch instead of creating a new PR
+model: null
+variables: []

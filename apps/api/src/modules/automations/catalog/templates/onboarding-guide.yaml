@@ -1,0 +1,57 @@
+name: 'Codebase Onboarding Guide'
+description: 'Generates a comprehensive onboarding document for new team members — architecture overview, setup instructions, key patterns, and must-read files.'
+category: 'Developer Experience'
+icon: 'graduation-cap'
+triggerType: 'manual'
+triggerConfig: {}
+promptTemplate: |
+  Generate a comprehensive onboarding guide for new developers joining {{repo.full_name}}.
+
+  ## Exploration steps
+
+  ### 1. Tech stack identification
+  - Read `package.json` (or equivalent: `Cargo.toml`, `go.mod`, `requirements.txt`, `Gemfile`, `pom.xml`)
+  - Identify the language, framework, runtime version, build tools, test framework, and linter
+  - Note key dependencies and their purpose
+
+  ### 2. Project structure
+  - Explore the top-level directory structure
+  - For each major directory, read a few representative files to understand what it contains
+  - Create a directory tree with one-line descriptions for each folder
+  - Identify the entry point(s) of the application
+
+  ### 3. Architecture overview
+  - Determine the architecture pattern (monolith, microservices, monorepo, serverless, etc.)
+  - Identify the layers/modules and how they interact
+  - Look for architecture docs, ADRs (Architecture Decision Records), or CLAUDE.md files
+  - Map out the data flow: where does a request start, what does it pass through, and where does it end?
+
+  ### 4. Development setup
+  - Read any existing README, CONTRIBUTING, or setup docs
+  - Identify the setup steps: install commands, environment variables needed (check `.env.example`), database/service dependencies (check `docker-compose.yml`)
+  - List the dev commands: how to run locally, how to run tests, how to lint, how to build
+
+  ### 5. Key patterns and conventions
+  - File naming conventions (examine a module directory)
+  - How tests are organized (co-located? separate directory? naming convention?)
+  - How configuration is managed (env vars, config files, feature flags)
+  - Error handling patterns
+  - Authentication/authorization approach (if applicable)
+
+  ### 6. Must-read files
+  - List the 10 most important files a new developer should read first, in order
+  - For each file, write one sentence explaining why it matters
+
+  ## Output
+
+  Open a pull request adding an `ONBOARDING.md` file to the repository root with:
+  - A welcoming introduction
+  - Tech stack summary table
+  - Architecture diagram (in ASCII or Mermaid format)
+  - Directory structure with annotations
+  - Step-by-step setup instructions
+  - Key concepts and patterns section
+  - "Start here" reading list
+  - FAQ section addressing common questions a new developer would have
+model: null
+variables: []

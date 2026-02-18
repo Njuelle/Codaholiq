@@ -1,5 +1,5 @@
 name: 'PR Code Review'
-description: 'Automatically reviews pull requests for code quality, best practices, and potential bugs. Provides constructive feedback as PR review comments.'
+description: 'Performs a thorough multi-pass code review on pull requests — checking correctness, conventions, edge cases, and test coverage.'
 category: 'Code Quality'
 icon: 'search-code'
 triggerType: 'event'
@@ -10,16 +10,44 @@ triggerConfig:
 promptTemplate: |
   Review pull request #{{event.number}} in {{event.repo}}.
 
-  PR title: {{event.title}}
-  PR description: {{event.body}}
+  **PR title:** {{event.title}}
+  **Description:** {{event.body}}
 
-  Focus on:
-  - Code quality and readability
-  - Potential bugs or edge cases
-  - Adherence to best practices
-  - Performance considerations
+  ## Review approach
 
-  Provide constructive, actionable feedback as PR review comments.
-  Be specific about what to change and why.
+  Perform a structured, multi-pass review. Read the full diff first, then review systematically.
+
+  ### Pass 1: Correctness
+  - Look for logic bugs, off-by-one errors, null/undefined handling, and race conditions
+  - Verify that error paths are handled — what happens when things fail?
+  - Check boundary conditions and edge cases (empty arrays, zero values, very large inputs)
+  - Verify that async operations are properly awaited and errors are caught
+  - Check for resource leaks (unclosed connections, missing cleanup)
+
+  ### Pass 2: Code conventions
+  - Read a few existing files in the same directory to understand the project's patterns and conventions
+  - Does the new code follow the same naming conventions, file structure, and architectural patterns?
+  - Are there existing utilities or helpers that could be reused instead of duplicating logic?
+  - Is the code consistent with the project's error handling patterns?
+
+  ### Pass 3: Test coverage
+  - Read the test files included in the PR (if any)
+  - For each new function, method, or component — is there a corresponding test?
+  - Are edge cases and error paths tested, not just the happy path?
+  - If tests are missing for significant new logic, note specifically what should be tested
+
+  ### Pass 4: Performance & maintainability
+  - Look for N+1 queries, unnecessary re-renders, or O(n²) operations on potentially large datasets
+  - Are there any new dependencies added? If so, are they justified and well-maintained?
+  - Is the code readable to someone unfamiliar with this PR? Would it benefit from a clarifying comment?
+
+  ## Output format
+
+  Write your review to a file, then post it as a **comment on the PR** using `gh pr comment {{event.number}} --body-file <file>`:
+  - Structure the comment with sections: Summary, Findings, and Verdict
+  - For specific code issues, reference the file path and line number
+  - Be constructive and specific — explain *why* something is an issue and suggest a concrete fix
+  - Acknowledge what the PR does well — good reviews are balanced
+  - End with a clear verdict: Looks good / Has suggestions / Needs changes
 model: null
 variables: []

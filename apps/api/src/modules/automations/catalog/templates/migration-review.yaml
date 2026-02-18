@@ -1,0 +1,56 @@
+name: 'Migration Safety Review'
+description: 'Reviews database migration files in PRs for safety risks — table locks, data loss, missing rollbacks, and backwards compatibility.'
+category: 'Security'
+icon: 'database'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'pull_request.opened'
+    - 'pull_request.synchronize'
+promptTemplate: |
+  Review pull request #{{event.number}} in {{event.repo}} for database migration safety.
+
+  **PR title:** {{event.title}}
+
+  ## Process
+
+  ### 1. Detect migration files
+  - Get the list of changed files: `gh pr diff {{event.number}} --name-only`
+  - Look for migration files matching common patterns: `migrations/`, `db/migrate/`, `prisma/migrations/`, `alembic/versions/`, `*.migration.*`, `*.sql` in migration directories
+  - If no migration files are found in this PR, leave a brief comment confirming "No database migrations detected" and stop
+
+  ### 2. Analyze each migration for safety risks
+
+  Read each migration file and check for:
+
+  #### CRITICAL risks (block merge)
+  - **Data loss** — `DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, or `DELETE` without a backup step. Dropping a column that the running application still reads from will cause errors
+  - **Type changes with data loss** — `ALTER COLUMN ... TYPE` that narrows the data type (e.g., `text` → `varchar(50)`, `bigint` → `integer`). Existing data may not fit
+  - **Non-reversible operations** — migrations without a corresponding rollback/down step. If something goes wrong, can this be undone?
+
+  #### HIGH risks (warn)
+  - **Table locks on large tables** — `ALTER TABLE` on tables with millions of rows will lock the table. Recommend `ALTER TABLE ... ADD COLUMN ... DEFAULT` (which is instant in Postgres 11+) or online migration tools
+  - **Index creation without CONCURRENTLY** — `CREATE INDEX` locks writes on the table. Use `CREATE INDEX CONCURRENTLY` for production databases
+  - **NOT NULL without default** — adding a `NOT NULL` column without a `DEFAULT` will fail on tables with existing rows
+  - **Renaming columns/tables** — the running application still references the old name. This requires a multi-step migration: add new → migrate data → update code → drop old
+
+  #### MEDIUM risks (suggest)
+  - **Missing indexes** — new foreign key columns without corresponding indexes (will cause slow joins)
+  - **Large data backfills** — `UPDATE ... SET` on large tables should be batched to avoid long-running transactions
+  - **Enum modifications** — adding values is safe, but removing or renaming enum values can break existing data
+
+  ### 3. Check backwards compatibility
+  - Read the application code that references the affected tables/columns
+  - Will the application work correctly with BOTH the old and new schema during deployment? (There's always a window where old code runs against the new schema)
+  - If not, flag it — the migration and code change may need to be deployed in a specific order
+
+  ### 4. Submit review
+  Write your review to a file, then post a **comment on the PR** using `gh pr comment {{event.number}} --body-file <file>` with findings:
+  - **CRITICAL** — must fix before merge
+  - **HIGH** — should fix, with suggested safe alternatives
+  - **MEDIUM** — recommendations for improvement
+  - If the migration is safe, confirm what was checked
+
+  Include specific line references and suggest safe alternatives for each risk found.
+model: null
+variables: []

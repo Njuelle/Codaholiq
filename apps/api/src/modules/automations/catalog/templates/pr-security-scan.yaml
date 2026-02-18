@@ -1,5 +1,5 @@
 name: 'PR Security Scan'
-description: 'Scans pull requests for security vulnerabilities, insecure patterns, and potential data exposure risks.'
+description: 'Deep security review of pull requests — scans for vulnerabilities, leaked secrets, insecure patterns, and dependency risks.'
 category: 'Security'
 icon: 'shield'
 triggerType: 'event'
@@ -10,17 +10,57 @@ triggerConfig:
 promptTemplate: |
   Perform a security review of pull request #{{event.number}} in {{event.repo}}.
 
-  PR title: {{event.title}}
-  PR description: {{event.body}}
+  **PR title:** {{event.title}}
+  **Description:** {{event.body}}
 
-  Check for:
-  - SQL injection, XSS, and command injection vulnerabilities
-  - Hardcoded secrets, API keys, or credentials
-  - Insecure authentication or authorization patterns
-  - Missing input validation or sanitization
-  - Unsafe deserialization or file handling
-  - OWASP Top 10 vulnerabilities
+  ## Security review checklist
 
-  Report findings with severity levels (critical, high, medium, low) and remediation steps.
+  Read the full diff, then systematically check each category:
+
+  ### 1. Secrets & credentials
+  - Search the diff for hardcoded strings that look like API keys, tokens, passwords, connection strings, or private keys
+  - Check for common patterns: `password`, `secret`, `api_key`, `token`, `authorization`, `bearer`, `AWS_`, `GITHUB_TOKEN`, base64-encoded strings, or strings matching key formats (e.g., `sk-...`, `ghp_...`, `AKIA...`)
+  - Verify that any new configuration files don't contain secrets and are properly templated with environment variable references
+  - **Severity: CRITICAL** if any secrets are found
+
+  ### 2. Injection vulnerabilities
+  - **SQL injection:** look for string concatenation or template literals in database queries. Verify parameterized queries are used
+  - **Command injection:** search for `exec()`, `spawn()`, `system()`, or backtick execution with user-controlled input
+  - **XSS:** check for `dangerouslySetInnerHTML`, `innerHTML`, unescaped user input in templates, or missing output encoding
+  - **Path traversal:** look for file operations using user-provided paths without validation or sanitization
+  - **Severity: HIGH** for any injection vector
+
+  ### 3. Authentication & authorization
+  - Are new API endpoints protected by authentication middleware?
+  - Do new routes check authorization (permissions, org scoping)?
+  - Are there any endpoints that skip auth without justification?
+  - Is sensitive data filtered from API responses (passwords, tokens, internal IDs)?
+
+  ### 4. Input validation
+  - Do new API endpoints validate and sanitize all input parameters?
+  - Are request body schemas defined and enforced?
+  - Are file uploads validated (type, size, content)?
+  - Are URL redirects validated against a whitelist?
+
+  ### 5. Dependency risk
+  - Are any new dependencies added in this PR?
+  - For each new dependency: check its package registry page (npm, PyPI, crates.io, RubyGems, etc.) for maintenance status, download count, and known vulnerabilities
+  - Flag dependencies with very low adoption or no updates in 12+ months
+
+  ### 6. Data exposure
+  - Does the code log sensitive information (passwords, tokens, PII)?
+  - Are error messages exposing internal details (stack traces, SQL queries, file paths)?
+  - Is sensitive data properly encrypted at rest and in transit?
+
+  ## Output format
+
+  Write your findings to a file, then post a **comment on the PR** using `gh pr comment {{event.number}} --body-file <file>` with findings organized by severity:
+  - **CRITICAL** — must fix before merge (secrets, direct injection vectors)
+  - **HIGH** — should fix before merge (auth bypass, missing validation)
+  - **MEDIUM** — fix soon (weak patterns, missing sanitization)
+  - **LOW** — informational (best practice suggestions)
+
+  For each finding, include: the file and line number, what the issue is, why it's a risk, and how to fix it.
+  If no security issues are found, post a brief confirmation of what was checked.
 model: null
 variables: []

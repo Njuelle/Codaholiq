@@ -18,7 +18,7 @@ const sharedFields = {
   category: z.string().min(1).max(50),
   icon: z.string().min(1).max(50),
   promptTemplate: z.string().min(1),
-  model: z.string().nullable().optional().default(null),
+  model: z.string().regex(/^claude-[a-z0-9.-]+$/, 'Model must be a valid Claude model identifier').nullable().optional().default(null),
   variables: z.array(CatalogVariableSchema).optional().default([]),
 };
 

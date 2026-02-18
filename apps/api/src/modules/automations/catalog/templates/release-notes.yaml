@@ -1,5 +1,5 @@
 name: 'Release Notes'
-description: 'Automatically generates detailed release notes when a new release is published, based on commits and PRs since the last release.'
+description: 'Generates polished release notes from commits and merged PRs when a new release is published, with categorization and contributor credits.'
 category: 'Documentation'
 icon: 'file-text'
 triggerType: 'event'
@@ -9,12 +9,34 @@ triggerConfig:
 promptTemplate: |
   A new release "{{release.name}}" ({{release.tag_name}}) has been published in {{event.repo}}.
 
-  Generate comprehensive release notes:
-  1. List all commits since the previous release
-  2. Group changes by category (features, bug fixes, improvements, breaking changes)
-  3. Highlight notable changes and their impact
-  4. Credit contributors
+  ## Generate release notes
 
-  Update the release body with the generated notes in a clean, readable markdown format.
+  ### 1. Gather changes
+  - Find the previous release tag with `gh release list --limit 5` and identify the tag immediately before `{{release.tag_name}}`
+  - Get all commits between the two tags: `git log <previous_tag>..{{release.tag_name}} --oneline`
+  - Get all merged PRs in this range: `gh pr list --state merged --search "merged:>=$(date of previous release)"` or cross-reference commit SHAs with PR merge commits
+
+  ### 2. Categorize changes
+  Group changes into these sections (omit empty sections):
+
+  - **Breaking Changes** — any changes that break backward compatibility (API changes, removed features, renamed exports, config format changes). Look for commits/PRs with "breaking", "BREAKING CHANGE", or major version bumps
+  - **New Features** — new functionality, commands, endpoints, or UI components. Look for "feat:", "add:", "feature" in commit messages
+  - **Bug Fixes** — resolved issues and corrected behavior. Look for "fix:", "bug", "patch", "resolve" in commit messages
+  - **Improvements** — enhancements to existing features, performance gains, UX tweaks. Look for "improve:", "enhance:", "refactor:", "perf:"
+  - **Documentation** — docs updates, README changes. Look for "docs:", "doc:", "readme"
+  - **Internal** — CI/CD changes, dependency updates, test improvements. These go at the bottom in a collapsed `<details>` block
+
+  ### 3. Format the release notes
+  For each change:
+  - Write a clear, user-facing description (not the raw commit message)
+  - Link to the PR number if available: `(#123)`
+  - Credit the author: `@username`
+
+  Add a **Contributors** section at the bottom listing everyone who contributed to this release (deduplicated).
+
+  If there are breaking changes, add a **Migration Guide** section at the top with clear upgrade instructions.
+
+  ### 4. Update the release
+  Update the release body with the generated notes using `gh release edit {{release.tag_name}} --notes "<generated notes>"`.
 model: null
 variables: []

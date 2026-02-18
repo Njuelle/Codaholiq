@@ -1,5 +1,5 @@
 name: 'Issue Triage'
-description: 'Automatically labels, categorizes, and prioritizes newly opened issues based on their content.'
+description: 'Automatically labels, prioritizes, and responds to newly opened issues by analyzing content against the codebase.'
 category: 'Project Management'
 icon: 'tag'
 triggerType: 'event'
@@ -7,18 +7,36 @@ triggerConfig:
   events:
     - 'issues.opened'
 promptTemplate: |
-  Triage issue #{{event.number}} in {{event.repo}}.
+  A new issue has been opened in {{event.repo}}: #{{event.number}}.
 
-  Issue title: {{event.title}}
-  Issue body: {{event.body}}
+  **Title:** {{event.title}}
+  **Body:** {{event.body}}
 
-  Based on the issue content:
-  1. Categorize it (bug, feature request, question, documentation, etc.)
-  2. Assess priority (critical, high, medium, low)
-  3. Add appropriate labels
-  4. If it's a bug report, check if enough information is provided and request missing details
-  5. Leave a welcome comment acknowledging the issue
+  ## Triage process
 
-  Be helpful and welcoming to encourage contributions.
+  1. **Check for duplicates** — search existing issues with `gh issue list --search "<key terms from the title>"`. If a likely duplicate exists, comment with a link to the original issue and add a `duplicate` label. Stop here if it's a clear duplicate.
+
+  2. **Read the repo's labels** — run `gh label list` to see what labels are available. Only use labels that already exist in the repository. Never create new labels.
+
+  3. **Analyze the issue against the codebase:**
+     - Search for files, functions, or modules mentioned in the issue
+     - Identify the area of the codebase that would be affected
+     - If it's a bug report, try to locate the relevant code path and assess whether the described behavior is plausible
+
+  4. **Categorize and label:**
+     - **Type:** bug, feature, enhancement, question, or documentation (match to the repo's label naming convention)
+     - **Area:** if the repo has area/component labels, apply the relevant one based on your codebase analysis
+     - **Priority:** assess based on impact — does this affect core functionality, a niche use case, or is it cosmetic?
+     Apply labels with `gh issue edit {{event.number}} --add-label "label1,label2"`.
+
+  5. **Check for missing information** (bug reports only):
+     - Does the issue include steps to reproduce?
+     - Is the expected vs actual behavior described?
+     - Is the environment specified?
+     If key information is missing, politely ask for it in your comment.
+
+  6. **Post a welcome comment** — acknowledge the issue, explain what you found during triage (mention specific files or modules if relevant), and set expectations. Be friendly and encourage follow-up.
+
+  7. **Check CODEOWNERS** — if a `CODEOWNERS` file exists, identify the owner of the affected area and mention them in your comment so they're notified.
 model: null
 variables: []

@@ -1,0 +1,54 @@
+name: 'Auto-Generate Tests'
+description: 'Analyzes PR changes for untested code and generates idiomatic test files matching the project''s existing patterns and framework.'
+category: 'Code Quality'
+icon: 'test-tubes'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'pull_request.opened'
+    - 'pull_request.synchronize'
+promptTemplate: |
+  Analyze pull request #{{event.number}} in {{event.repo}} for missing test coverage and generate tests.
+
+  ## Process
+
+  ### 1. Identify the test framework and patterns
+  - Look at existing test files to determine: the test framework (Jest, Vitest, Mocha, pytest, Go testing, etc.), the assertion style, and the file naming convention
+  - Understand how tests are organized: co-located with source? separate `__tests__/` directory? `tests/` folder?
+  - Read 2-3 existing test files to learn the project's testing patterns: how mocks are set up, how fixtures are used, what helpers exist
+
+  ### 2. Analyze the PR diff
+  - Get the diff with `gh pr diff {{event.number}}`
+  - Identify all new or significantly modified functions, methods, classes, and components
+  - For each, check if a corresponding test already exists
+  - Build a list of untested code that needs tests
+
+  ### 3. Prioritize what to test
+  Focus on (in order of importance):
+  - New public functions/methods with business logic
+  - New API endpoints or route handlers
+  - New UI components with conditional rendering or user interactions
+  - Modified functions where the behavior changed (existing tests may need updating)
+
+  Skip:
+  - Pure type definitions or interfaces
+  - Simple re-exports or barrel files
+  - Configuration files
+  - Code that is purely declarative (e.g., route definitions, schema declarations)
+
+  ### 4. Generate tests
+  For each untested piece of code:
+  - Write tests that cover: the happy path, edge cases (empty input, null, boundary values), and error paths
+  - Follow the project's exact patterns: same imports, same describe/it structure, same mock setup
+  - Use meaningful test descriptions that explain the expected behavior
+  - Place test files in the correct location following the project's convention
+
+  ### 5. Verify and push
+  - Run the test suite to make sure the new tests pass: use the project's test command
+  - If any tests fail, fix them — don't push broken tests
+  - Commit the new test files to the PR branch with message: "test: add tests for new code in PR #{{event.number}}"
+  - Push the commit to the PR branch
+
+  Leave a PR comment summarizing what was tested and any areas that couldn't be automatically tested (suggest manual testing for those).
+model: null
+variables: []

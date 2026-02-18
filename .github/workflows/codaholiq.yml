@@ -20,6 +20,8 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: read
+  security-events: read
   id-token: write
 
 jobs:
@@ -37,6 +39,28 @@ jobs:
           MODEL: ${{ github.event.inputs.model }}
 
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        if: hashFiles('package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb') != ''
+        shell: bash
+        run: |
+          if [ -f "pnpm-lock.yaml" ]; then
+            npm install -g pnpm && pnpm install --frozen-lockfile
+          elif [ -f "yarn.lock" ]; then
+            corepack enable && yarn install --frozen-lockfile
+          elif [ -f "bun.lockb" ]; then
+            npm install -g bun && bun install --frozen-lockfile
+          elif [ -f "package-lock.json" ]; then
+            npm ci
+          fi
 
       - uses: anthropics/claude-code-action@v1
         with:

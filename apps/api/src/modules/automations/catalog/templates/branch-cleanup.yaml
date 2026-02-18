@@ -1,0 +1,61 @@
+name: 'Branch Cleanup'
+description: 'Weekly report of merged and stale branches — identifies branches that can be safely deleted and creates an actionable cleanup issue.'
+category: 'CI/CD'
+icon: 'scissors'
+triggerType: 'cron'
+triggerConfig:
+  schedule: '0 6 * * 1'
+promptTemplate: |
+  Perform weekly branch cleanup analysis for {{repo.full_name}}.
+  Triggered at {{timestamp}} by "{{automation.name}}".
+
+  ## Process
+
+  ### 1. Identify the protected branches
+  - Determine the default branch: `gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name'`
+  - Branches that should NEVER be deleted: the default branch, `main`, `master`, `develop`, `staging`, `production`, and any `release/*` branches
+  - Check for branch protection rules: `gh api repos/{{repo.full_name}}/branches --jq '.[].name'`
+
+  ### 2. Find merged branches
+  - Use `gh pr list --state merged --limit 100 --json headRefName` to find branches from merged PRs
+  - Cross-reference with remote branches: `git branch -r` to find branches that still exist
+  - Also check `git branch -r --merged origin/<default_branch>` for branches merged without PRs
+  - Filter out protected branches
+  - **Important:** `--merged` only detects regular merge commits, not squash merges. The PR-based approach above handles squash merges correctly.
+
+  ### 3. Find stale branches
+  - For each remaining unmerged branch, check the date of the last commit: `git log -1 --format=%ci origin/<branch>`
+  - A branch is **stale** if its last commit is older than 60 days
+  - Exclude branches with open PRs — someone may still be working on them: `gh pr list --state open --json headRefName`
+
+  ### 4. Create a cleanup report issue
+  Create a GitHub issue titled "Branch cleanup report — {{timestamp}}" with:
+
+  #### Merged branches (safe to delete)
+  List each branch with:
+  - Branch name
+  - The PR it was merged in (if found)
+  - Recommended action: delete
+
+  Include a single command to delete all at once:
+  ```
+  gh api repos/{{repo.full_name}}/git/refs -X DELETE ...
+  ```
+  Or list the individual `git push origin --delete <branch>` commands so the maintainer can copy-paste.
+
+  #### Stale branches (needs review)
+  List each branch with:
+  - Branch name
+  - Last commit date and author
+  - How far behind the default branch it is
+  - Whether it has any unique commits not in the default branch
+  - Recommendation: delete if abandoned, or rebase and open a PR if the work is still relevant
+
+  #### Summary
+  - Merged branches ready to delete: X
+  - Stale branches needing review: Y
+  - Protected branches skipped: Z
+
+  If no cleanup is needed, do nothing (no empty reports).
+model: null
+variables: []

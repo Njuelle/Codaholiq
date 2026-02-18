@@ -5,6 +5,7 @@ import { ExecutionRepository } from '../../../executions/executions.repository';
 import { ExecutionLifecycleService } from '../../../executions/execution-lifecycle.service';
 import { PromptTemplateService } from '../../templates/prompt-template.service';
 import { VariablesService } from '../../../variables/variables.service';
+import { GitHubEntityRepository } from '../../../github/github-entity.repository';
 
 function createMockVariablesService() {
   return {
@@ -46,6 +47,17 @@ function createMockFailureTracker() {
   };
 }
 
+function createMockGitHubEntityRepository() {
+  return {
+    findRepositoryById: vi.fn().mockResolvedValue({
+      id: 100,
+      owner: 'test-org',
+      name: 'test-repo',
+      fullName: 'test-org/test-repo',
+    }),
+  };
+}
+
 function makeJob(data: CronTriggerJobData): Job<CronTriggerJobData> {
   return { data } as Job<CronTriggerJobData>;
 }
@@ -76,12 +88,14 @@ describe('CronTriggerProcessor', () => {
   let executionRepo: ReturnType<typeof createMockExecutionRepository>;
   let executionLifecycle: ReturnType<typeof createMockExecutionLifecycle>;
   let promptService: ReturnType<typeof createMockPromptTemplateService>;
+  let githubEntityRepo: ReturnType<typeof createMockGitHubEntityRepository>;
 
   beforeEach(() => {
     automationRepo = createMockAutomationRepository();
     executionRepo = createMockExecutionRepository();
     executionLifecycle = createMockExecutionLifecycle();
     promptService = createMockPromptTemplateService();
+    githubEntityRepo = createMockGitHubEntityRepository();
 
     processor = new CronTriggerProcessor(
       automationRepo as unknown as AutomationRepository,
@@ -90,6 +104,7 @@ describe('CronTriggerProcessor', () => {
       promptService as unknown as PromptTemplateService,
       createMockFailureTracker() as never,
       createMockVariablesService() as unknown as VariablesService,
+      githubEntityRepo as unknown as GitHubEntityRepository,
     );
   });
 
@@ -106,6 +121,7 @@ describe('CronTriggerProcessor', () => {
       workflowFile: '.github/workflows/codaholiq.yml',
       triggerEvent: { type: 'cron', schedule: '0 * * * *' },
       resolvedPrompt: 'resolved prompt',
+      model: undefined,
     });
   });
 
@@ -145,7 +161,7 @@ describe('CronTriggerProcessor', () => {
     });
   });
 
-  it('should pass built-in variables to prompt resolution', async () => {
+  it('should pass repo and automation built-in variables to prompt resolution', async () => {
     automationRepo.findByIdInternal.mockResolvedValue(makeAutomation());
 
     await processor.process(makeJob({ automationId: 1 }));
@@ -156,6 +172,35 @@ describe('CronTriggerProcessor', () => {
       sharedVariables: [],
       builtIns: expect.objectContaining({
         'automation.name': 'cron-automation',
+        'repo.owner': 'test-org',
+        'repo.name': 'test-repo',
+        'repo.full_name': 'test-org/test-repo',
+      }),
+    });
+  });
+
+  it('should look up repository by automation repoId', async () => {
+    automationRepo.findByIdInternal.mockResolvedValue(makeAutomation());
+
+    await processor.process(makeJob({ automationId: 1 }));
+
+    expect(githubEntityRepo.findRepositoryById).toHaveBeenCalledWith({ id: 100 });
+  });
+
+  it('should use empty strings for repo built-ins when repo not found', async () => {
+    automationRepo.findByIdInternal.mockResolvedValue(makeAutomation());
+    githubEntityRepo.findRepositoryById.mockResolvedValue(undefined);
+
+    await processor.process(makeJob({ automationId: 1 }));
+
+    expect(promptService.resolve).toHaveBeenCalledWith({
+      template: 'Run check at {{timestamp}}',
+      variables: [],
+      sharedVariables: [],
+      builtIns: expect.objectContaining({
+        'repo.owner': '',
+        'repo.name': '',
+        'repo.full_name': '',
       }),
     });
   });

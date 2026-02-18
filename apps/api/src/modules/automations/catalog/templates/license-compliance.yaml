@@ -1,0 +1,72 @@
+name: 'License Compliance'
+description: 'Checks new dependencies in PRs for license compatibility — flags copyleft, unknown, or restrictive licenses before they enter the codebase.'
+category: 'Security'
+icon: 'scale'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'pull_request.opened'
+promptTemplate: |
+  Check pull request #{{event.number}} in {{event.repo}} for dependency license compliance.
+
+  **PR title:** {{event.title}}
+
+  ## Process
+
+  ### 1. Detect new dependencies
+  - Get the PR diff: `gh pr diff {{event.number}}`
+  - Look for changes to dependency manifests: `package.json`, `requirements.txt`, `Pipfile`, `Cargo.toml`, `go.mod`, `Gemfile`, `pom.xml`, `build.gradle`
+  - Identify which dependencies are newly added (not just version bumps)
+  - If no new dependencies were added, leave a brief comment confirming and stop
+
+  ### 2. Check each new dependency's license
+  For each new dependency:
+  - Check the package registry for license information:
+    - npm: `npm view <package> license`
+    - PyPI: check the package metadata
+    - Others: read the `LICENSE` file from the package's repository
+  - If a package has no declared license, flag it immediately
+
+  ### 3. Classify by compatibility
+
+  **Permissive (OK):**
+  - MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, Unlicense, CC0-1.0, 0BSD, Zlib
+  - These are safe for any use. No action needed.
+
+  **Weak copyleft (Review):**
+  - LGPL-2.1, LGPL-3.0, MPL-2.0, EPL-2.0
+  - Generally OK for libraries used as dependencies (not modified), but should be noted. Flag for awareness.
+
+  **Strong copyleft (Block):**
+  - GPL-2.0, GPL-3.0, AGPL-3.0
+  - These require derivative works to use the same license. This could affect the entire project's licensing.
+  - **Request changes** — explain the implications and suggest alternatives.
+
+  **Unknown or No License:**
+  - Packages with no license declaration
+  - **Request changes** — using unlicensed code is legally risky. Suggest alternatives or recommend contacting the package author.
+
+  **Non-standard / Custom:**
+  - Any license not in the above categories
+  - Flag for manual legal review.
+
+  ### 4. Check transitive dependencies
+  For each new direct dependency, also check its major dependencies for license issues:
+  - Run `npm ls <package> --all` (or equivalent) to see the dependency tree
+  - Flag if a permissive direct dependency pulls in a copyleft transitive dependency
+
+  ### 5. Submit review
+  Write your review to a file, then post a **comment on the PR** using `gh pr comment {{event.number}} --body-file <file>` with a summary table:
+
+  | Package | Version | License | Status |
+  |---------|---------|---------|--------|
+  | example | 1.2.3   | MIT     | OK     |
+  | other   | 4.5.6   | GPL-3.0 | BLOCK  |
+
+  - **OK:** confirm with the table for reference
+  - **Review needed:** explain weak copyleft implications
+  - **Block:** explain the issue and suggest permissive alternatives
+
+  For blocked dependencies, search the package registry for alternative packages with compatible licenses that provide similar functionality.
+model: null
+variables: []

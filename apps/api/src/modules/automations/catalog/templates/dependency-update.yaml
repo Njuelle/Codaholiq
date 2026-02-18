@@ -1,0 +1,57 @@
+name: 'Dependency Update'
+description: 'Weekly scan for outdated dependencies — creates a batch update PR for patches and minors, plus individual PRs for the top 3 major updates.'
+category: 'Dependencies'
+icon: 'package'
+triggerType: 'cron'
+triggerConfig:
+  schedule: '0 9 * * 1'
+promptTemplate: |
+  Perform a weekly dependency update check for {{repo.full_name}}.
+  Triggered at {{timestamp}} by "{{automation.name}}".
+
+  ## Process
+
+  ### 1. Detect the package manager
+  - Check for: `package-lock.json` (npm), `yarn.lock` (yarn), `pnpm-lock.yaml` (pnpm), `bun.lockb` (bun), `Cargo.lock` (Rust), `go.sum` (Go), `requirements.txt`/`Pipfile.lock` (Python), `Gemfile.lock` (Ruby)
+  - Use the appropriate commands for the detected package manager
+
+  ### 2. Check for outdated dependencies
+  - Run the outdated command (e.g., `npm outdated --json`, `yarn outdated --json`)
+  - Categorize each outdated dependency:
+    - **Patch** (1.2.3 -> 1.2.4) — bug fixes, safe to batch update
+    - **Minor** (1.2.3 -> 1.3.0) — new features, backward compatible, safe to batch
+    - **Major** (1.2.3 -> 2.0.0) — potential breaking changes, needs individual PR
+
+  ### 3. Security-first: check for vulnerabilities
+  - Run `npm audit --json` (or equivalent) before any updates
+  - If any outdated dependencies have known vulnerabilities, prioritize those in the batch update and label the PR with `security`
+
+  ### 4. Create batch PR for patch + minor updates
+  If there are patch/minor updates:
+  - Update all patch and minor dependencies together
+  - Run the test suite to verify compatibility
+  - If tests pass, open a single PR titled: "chore(deps): update patch and minor dependencies"
+  - In the PR body, list each updated dependency with old -> new version
+  - If tests fail, identify which update broke things and exclude it — note it in the PR body
+
+  ### 5. Create individual PRs for major updates (limit to top 3)
+  To keep the run manageable, pick the **3 most important** major updates. Prioritize by:
+  1. Dependencies with security vulnerabilities
+  2. Frameworks and core libraries (e.g., React, Express, NestJS)
+  3. Dependencies with the most releases behind
+
+  For each selected major update:
+  - Check the package's changelog or release notes
+  - Identify breaking changes and migration steps
+  - Update the dependency
+  - Run tests. If they fail, attempt to fix the breaking changes
+  - Open a PR titled: "chore(deps): update [package-name] to v[X]"
+  - In the body, include: breaking changes summary, migration steps taken, test results, and any manual verification needed
+
+  If there are more than 3 major updates remaining, note them in the batch PR body under a "Remaining major updates" section.
+
+  ### 6. Summary
+  If no updates are needed, do nothing (don't create empty PRs or issues).
+  If updates were made, leave a summary comment on the batch PR explaining the overall update status.
+model: null
+variables: []

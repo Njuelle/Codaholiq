@@ -1,5 +1,5 @@
 name: 'Fix Failing CI'
-description: 'Automatically investigates and fixes failing CI workflows by analyzing error logs and creating fix PRs.'
+description: 'Automatically investigates and fixes failing CI workflows by analyzing error logs, tracing root causes, and opening fix PRs.'
 category: 'CI/CD'
 icon: 'wrench'
 triggerType: 'event'
@@ -8,20 +8,41 @@ triggerConfig:
     - 'workflow_run.completed'
   conditionGroups:
     - conditions:
-        - path: 'conclusion'
+        - path: 'workflow_run.conclusion'
           operator: 'equals'
           value: 'failure'
+        - path: 'workflow_run.name'
+          operator: 'not_equals'
+          value: 'Codaholiq'
 promptTemplate: |
-  The workflow "{{workflow_run.name}}" has failed on branch {{workflow_run.head_branch}} in {{event.repo}}.
+  The CI workflow "{{workflow_run.name}}" has failed on branch `{{workflow_run.head_branch}}` in {{event.repo}}.
+  Workflow run ID: {{workflow_run.id}}.
 
-  Conclusion: {{workflow_run.conclusion}}
+  ## Investigation steps
 
-  Investigate the failure:
-  1. Check the workflow run logs to identify the root cause
-  2. Determine if the failure is in tests, linting, build, or other steps
-  3. Analyze the failing code and create a fix
-  4. Open a pull request with the fix
+  1. **Retrieve the workflow logs** — use `gh run view {{workflow_run.id}} --log-failed` to get the output of the failed run. Focus on the failing job and step.
 
-  If the failure is flaky or infrastructure-related, leave a comment explaining the situation instead.
+  2. **Classify the failure type:**
+     - **Test failure** — identify the failing test(s), read the test file and the source code being tested. Understand what the test expects vs what happened.
+     - **Lint / type-check failure** — read the exact error messages, locate the offending file and line.
+     - **Build failure** — check for missing dependencies, import errors, or compilation issues.
+     - **Infrastructure / flaky failure** — if the error is a timeout, network issue, or non-deterministic failure, do NOT attempt a code fix.
+
+  3. **Trace to root cause** — read the relevant source files. Understand the context around the failure. Check recent commits on the branch with `git log --oneline -10` to see what changed.
+
+  4. **Apply a targeted fix** — make the minimum change necessary to fix the issue. Do NOT:
+     - Suppress or skip failing tests
+     - Add suppression comments to bypass errors (e.g., `@ts-ignore`, `eslint-disable`, `# type: ignore`, `#[allow(...)]`, `//nolint`)
+     - Remove assertions to make tests pass
+     - Introduce workarounds that mask the real problem
+
+  5. **Verify** — run the same command that failed in CI to confirm the fix works. Detect the project's build/test/lint commands from the CI config, Makefile, or package manifest.
+
+  6. **Open a pull request** targeting `{{workflow_run.head_branch}}` with:
+     - A clear title: "fix: [description of what was broken]"
+     - A description explaining: what failed, why it failed, and what this fix does
+     - Reference the failed workflow run
+
+  If the failure is flaky or infrastructure-related (network timeout, runner issue, OOM), leave a comment on the most recent commit explaining the situation and suggesting a re-run instead.
 model: null
 variables: []

@@ -23,7 +23,7 @@
 
 ## What is Codaholiq?
 
-Codaholiq is a self-hosted platform that lets you create AI-powered automations for your GitHub repositories. Connect your repos, configure triggers (webhooks, cron schedules, or manual dispatch), write prompt templates, and Codaholiq dispatches GitHub Actions workflows that invoke the [Claude Code GitHub Action](https://github.com/anthropics/claude-code-action). Every execution is tracked with real-time log streaming.
+Codaholiq is a platform that lets you create AI-powered automations for your GitHub repositories. Connect your repos, configure triggers (webhooks, cron schedules, or manual dispatch), write prompt templates, and Codaholiq dispatches GitHub Actions workflows that invoke the [Claude Code GitHub Action](https://github.com/anthropics/claude-code-action). Every execution is tracked with real-time log streaming.
 
 ## Features
 
@@ -39,6 +39,14 @@ Codaholiq is a self-hosted platform that lets you create AI-powered automations 
 When a GitHub event (push, PR, issue, etc.) arrives, Codaholiq matches it against your configured automations, renders the prompt template with context from the event payload, and dispatches a GitHub Actions workflow running the Claude Code Action. The execution is tracked end-to-end with real-time log streaming back to the dashboard.
 
 ### Creating an Automation
+
+Pick a premade template from the catalog or start from scratch with a custom automation.
+
+![Template catalog](docs/screenshots/create%20automation%200.png)
+
+The catalog includes 27 ready-to-use templates across 7 categories — CI/CD, Code Quality, Security, Dependencies, Project Management, Documentation, and Developer Experience. Select a template, choose a repository, and you're live in seconds.
+
+For full control, choose **Custom Automation** and walk through the step-by-step form:
 
 **1. Basics** — Name your automation and select a repository.
 

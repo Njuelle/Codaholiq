@@ -9,6 +9,7 @@ import { ExecutionLifecycleService } from '../../executions/execution-lifecycle.
 import { PromptTemplateService } from '../templates/prompt-template.service';
 import { JobFailureTrackerService } from '../../../common/monitoring/job-failure-tracker.service';
 import { VariablesService } from '../../variables/variables.service';
+import { GitHubEntityRepository } from '../../github/github-entity.repository';
 
 export interface CronTriggerJobData {
   readonly automationId: number;
@@ -33,6 +34,8 @@ export class CronTriggerProcessor extends WorkerHost {
     private readonly failureTracker: JobFailureTrackerService,
     @Inject(VariablesService)
     private readonly variablesService: VariablesService,
+    @Inject(GitHubEntityRepository)
+    private readonly githubEntityRepository: GitHubEntityRepository,
   ) {
     super();
   }
@@ -67,7 +70,14 @@ export class CronTriggerProcessor extends WorkerHost {
       timezone?: string;
     };
 
+    const repo = await this.githubEntityRepository.findRepositoryById({
+      id: automation.repoId,
+    });
+
     const builtIns: Record<string, string> = {
+      'repo.owner': repo?.owner ?? '',
+      'repo.name': repo?.name ?? '',
+      'repo.full_name': repo?.fullName ?? '',
       timestamp: new Date().toISOString(),
       'automation.name': automation.name,
     };

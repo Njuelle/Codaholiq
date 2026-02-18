@@ -1,0 +1,51 @@
+name: 'Stale Issue Cleanup'
+description: 'Weekly scan for stale issues and PRs — posts friendly reminders, labels inactive items, and nudges stale PRs.'
+category: 'Project Management'
+icon: 'archive'
+triggerType: 'cron'
+triggerConfig:
+  schedule: '0 10 * * 1'
+promptTemplate: |
+  Perform a weekly stale issue and PR cleanup for {{repo.full_name}}.
+  Triggered at {{timestamp}} by "{{automation.name}}".
+
+  ## Process
+
+  ### 1. Identify stale issues
+  - List all open issues sorted by last update: `gh issue list --state open --sort updated --limit 100 --json number,title,updatedAt,labels,assignees`
+  - An issue is **stale** if it has had no activity (comments, label changes, or edits) in the last 30 days
+  - Exclude issues with labels like `pinned`, `keep-open`, `in-progress`, `blocked`, or `long-term`
+
+  ### 2. Handle stale issues
+  For each stale issue that does NOT already have a `stale` label:
+  - Check if the repo already has a `stale` label: `gh label list --search stale`
+  - If the `stale` label exists, add it. If it does not exist, do NOT create it — just mention in your comment that the issue appears stale
+  - Post a friendly comment:
+    > This issue has been automatically marked as stale because it hasn't had any activity in 30 days. If this issue is still relevant, please leave a comment or remove the `stale` label.
+
+  For each issue that ALREADY has the `stale` label AND has had no activity for 14+ more days (44+ days total):
+  - Do NOT auto-close the issue. Instead, post a follow-up comment:
+    > This issue has been stale for over 6 weeks. Consider closing it if no longer relevant, or remove the `stale` label to keep it open.
+
+  ### 3. Identify stale pull requests
+  - List all open PRs: `gh pr list --state open --json number,title,updatedAt,isDraft,headRefName`
+  - A PR is **stale** if it has had no activity in the last 14 days (PRs have a shorter window than issues)
+  - Exclude draft PRs (they're intentionally parked)
+
+  ### 4. Handle stale PRs
+  For each stale PR:
+  - Check if the branch has merge conflicts: `gh pr view <number> --json mergeable`
+  - Post a nudge comment:
+    > This PR has been inactive for 14+ days. [If conflicts: "It also has merge conflicts that need to be resolved."] Is this still being worked on? If so, please push an update. If not, consider closing it to keep the PR list clean.
+  - Do NOT auto-close PRs — only nudge
+
+  ### 5. Generate summary
+  If any actions were taken, open an issue titled "Stale cleanup summary — {{timestamp}}" with:
+  - Count of newly stale-labeled issues
+  - Count of stale issues with follow-up comments
+  - Count of stale PRs nudged
+  - Links to each affected issue/PR
+
+  If nothing was stale, do nothing (no empty reports).
+model: null
+variables: []

@@ -1,5 +1,5 @@
 name: 'Nightly Code Audit'
-description: 'Runs a comprehensive code audit every night, checking for code smells, technical debt, and improvement opportunities.'
+description: 'Runs a comprehensive code audit every night — security checks, dependency health, dead code, test gaps — and reports findings as a GitHub issue.'
 category: 'Code Quality'
 icon: 'clock'
 triggerType: 'cron'
@@ -7,18 +7,44 @@ triggerConfig:
   schedule: '0 2 * * *'
 promptTemplate: |
   Perform a comprehensive code audit of {{repo.full_name}}.
+  Audit triggered at {{timestamp}} by "{{automation.name}}".
 
-  Audit started at {{timestamp}} by automation "{{automation.name}}".
+  ## Audit checklist
 
-  Review the codebase for:
-  - Code smells and anti-patterns
-  - Unused dependencies or dead code
-  - Missing error handling
-  - Outdated patterns that could be modernized
-  - Test coverage gaps
-  - Documentation that is missing or outdated
+  Run each of the following checks and collect the results:
 
-  Create an issue summarizing your findings, prioritized by impact.
-  If there are quick wins, open a pull request with the fixes.
+  ### 1. Dependency health
+  - Run the package manager's audit command (e.g., `npm audit`, `yarn audit`, `pnpm audit`) and record any vulnerabilities with their severity
+  - Run the outdated check (e.g., `npm outdated`) and count major/minor/patch updates available
+  - Flag any dependencies with known CVEs
+
+  ### 2. Code quality signals
+  - Search for `TODO`, `FIXME`, `HACK`, and `XXX` comments across the codebase. Count them and list the top 10 by recency
+  - Identify the 5 largest source files (by line count) — these are complexity hotspots
+  - Search for debug statements that may have been left in production code: `console.log`/`console.debug` (JS/TS), `print()` (Python), `fmt.Println` (Go), `puts`/`pp` (Ruby), `println!`/`dbg!` (Rust), `System.out.println` (Java)
+  - Look for commented-out code blocks (3+ consecutive commented lines)
+
+  ### 3. Test coverage gaps
+  - Identify source files that have no corresponding test file
+  - List the top 10 untested files, prioritized by importance (core business logic over utilities)
+
+  ### 4. Security quick scan
+  - Search for hardcoded strings that look like secrets (API keys, tokens, passwords) — check for patterns like `password = "..."`, `apiKey:`, `SECRET`, `token = "..."`
+  - Check that `.env` files are in `.gitignore`
+  - Look for dangerous patterns: `eval(`, `exec(`, `system(`, `innerHTML`, `dangerouslySetInnerHTML`, `v-html`, or raw SQL string concatenation
+
+  ### 5. Freshness
+  - Check for lock file consistency — does the lock file match the dependency manifest? (e.g., `package-lock.json` vs `package.json`, `Cargo.lock` vs `Cargo.toml`, `poetry.lock` vs `pyproject.toml`)
+  - Identify configuration files that reference deprecated options or old versions
+
+  ## Output
+
+  Create a GitHub issue titled "Code Audit Report — {{timestamp}}" with:
+  - A summary section with key metrics (vulnerability count, outdated deps, TODO count, untested files)
+  - One section per audit area with detailed findings
+  - A "Recommended Actions" section prioritizing the top 5 things to fix, ordered by impact
+  - Label the issue with `audit` (create the label if it doesn't exist)
+
+  If a previous audit issue exists (search for "Code Audit Report"), reference it and note any trends (improving/degrading).
 model: null
 variables: []

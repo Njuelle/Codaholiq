@@ -1,0 +1,71 @@
+name: 'API Docs Generator'
+description: 'Scans the codebase for API endpoints and generates comprehensive API reference documentation with examples and schemas.'
+category: 'Documentation'
+icon: 'book-open'
+triggerType: 'manual'
+triggerConfig: {}
+promptTemplate: |
+  Generate comprehensive API documentation for {{repo.full_name}}.
+
+  ## Process
+
+  ### 1. Identify the API framework and patterns
+  - Detect the web framework: Express, NestJS, FastAPI, Django REST, Rails, Gin, etc.
+  - Understand how routes are defined (decorators, router files, config-based)
+  - Check for existing API docs (OpenAPI/Swagger specs, API.md, docs/ folder)
+  - Identify the authentication mechanism (JWT, API key, OAuth, session)
+
+  ### 2. Discover all endpoints
+  - Scan the codebase for route definitions: controller decorators (`@Get`, `@Post`), router mounts (`app.get()`), route files, etc.
+  - For each endpoint, extract:
+    - **HTTP method** (GET, POST, PUT, PATCH, DELETE)
+    - **Path** (including URL parameters)
+    - **Authentication** — is it protected? What role/permission is required?
+    - **Request body schema** — find the DTO, Zod schema, or type definition
+    - **Query parameters** — find any parsed query params
+    - **Response format** — read the return type or response DTO
+    - **Error responses** — check what exceptions/errors the endpoint can return
+
+  ### 3. Read existing patterns
+  - Look at middleware and guards to understand cross-cutting concerns (rate limiting, CORS, validation)
+  - Identify shared response formats (e.g., `{ data, meta }` for success, `{ error, message }` for errors)
+  - Note any API versioning strategy
+
+  ### 4. Generate the documentation
+  For each endpoint, create a section with:
+
+  ```markdown
+  ### METHOD /path/to/endpoint
+
+  **Description:** [What this endpoint does]
+  **Authentication:** [Required/Public] [Role if applicable]
+
+  **Parameters:**
+  | Name | In | Type | Required | Description |
+  |------|----|------|----------|-------------|
+  | id   | path | integer | Yes | Resource ID |
+
+  **Request body:**
+  ```json
+  { "field": "type — description" }
+  ```
+
+  **Response (200):**
+  ```json
+  { "data": { ... } }
+  ```
+
+  **Error responses:**
+  - `401` — Unauthorized
+  - `404` — Resource not found
+  ```
+
+  Group endpoints by resource/module.
+
+  ### 5. Output
+  - Create or update `docs/API.md` (or the existing docs location)
+  - Include a table of contents at the top with links to each section
+  - Add a "Getting Started" section: base URL, authentication flow, rate limits, common headers
+  - Open a PR titled: "docs: generate API reference documentation"
+model: null
+variables: []

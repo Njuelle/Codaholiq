@@ -1,0 +1,59 @@
+name: 'Performance Review'
+description: 'Scans PR changes for performance anti-patterns — N+1 queries, missing pagination, O(n²) loops, bundle bloat, and unnecessary re-renders.'
+category: 'Code Quality'
+icon: 'gauge'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'pull_request.opened'
+    - 'pull_request.synchronize'
+promptTemplate: |
+  Review pull request #{{event.number}} in {{event.repo}} for performance issues.
+
+  **PR title:** {{event.title}}
+
+  ## Performance review checklist
+
+  Get the full diff with `gh pr diff {{event.number}}` and analyze each changed file.
+
+  ### 1. Database & queries
+  - **N+1 queries** — look for database calls inside loops. If a function fetches a list, then loops through it making individual queries for each item, flag it. Suggest batch loading or joins
+  - **Missing pagination** — new endpoints or queries that return unbounded lists (e.g., `findAll()` without LIMIT). Flag any query that could return thousands of rows
+  - **Missing indexes** — new queries filtering or joining on columns that may not be indexed. Check the schema if available
+  - **SELECT *** — fetching all columns when only a few are needed. Suggest selecting specific fields
+  - **Queries in hot paths** — database calls in middleware, request handlers that run on every request, or frequently called utility functions
+
+  ### 2. Algorithmic complexity
+  - **O(n²) operations** — nested loops over the same or related data. Look for `.filter()` inside `.map()`, nested `for` loops, repeated `.find()` calls in a loop. Suggest using Maps/Sets for O(1) lookups
+  - **Unbounded operations** — operations on arrays/collections without size limits. What happens with 10,000 items?
+  - **Unnecessary sorting** — sorting data that's already sorted, or sorting when only the min/max is needed
+  - **String concatenation in loops** — building large strings with `+=` instead of using arrays and `.join()`
+
+  ### 3. Frontend performance (if applicable)
+  - **Unnecessary re-renders** — state changes that trigger re-renders of large component trees. Missing `useMemo`, `useCallback`, or `React.memo` on expensive computations or components receiving callbacks
+  - **Large bundles** — importing entire libraries when only a small part is needed (e.g., `import _ from 'lodash'` vs `import groupBy from 'lodash/groupBy'`). Check for new large dependencies
+  - **Missing lazy loading** — heavy components or routes that should use `React.lazy()` or dynamic imports
+  - **Expensive computations during render** — complex calculations or data transformations that should be memoized
+
+  ### 4. I/O and async
+  - **Sequential async calls** — multiple independent `await` calls that could be `Promise.all()`
+  - **Missing caching** — repeated calls for the same data that could be cached
+  - **Blocking operations** — synchronous file I/O, CPU-intensive operations on the main thread without offloading
+  - **Missing timeouts** — HTTP calls or external service calls without timeout limits
+
+  ### 5. Memory
+  - **Large data in memory** — loading entire files or datasets into memory when streaming would work
+  - **Memory leaks** — event listeners that aren't cleaned up, intervals without `clearInterval`, growing arrays/maps that never shrink
+  - **Unnecessary cloning** — deep copying large objects when a shallow copy or immutable update would suffice
+
+  ## Output format
+
+  Write your review to a file, then post a **comment on the PR** using `gh pr comment {{event.number}} --body-file <file>`. For each finding:
+  - Reference the specific file and line
+  - Explain what the performance issue is and the potential impact (e.g., "This will degrade linearly with the number of users")
+  - Suggest a concrete fix with a code example when possible
+  - Rate the severity: **critical** (will cause issues at scale), **warning** (suboptimal but functional), **note** (minor optimization opportunity)
+
+  If no performance issues are found, post a brief note confirming what was checked.
+model: null
+variables: []

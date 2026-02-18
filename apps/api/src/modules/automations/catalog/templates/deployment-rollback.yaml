@@ -1,0 +1,63 @@
+name: 'Deployment Rollback'
+description: 'Investigates failed deployments, identifies the breaking changes, and creates a detailed post-mortem issue with a revert PR if appropriate.'
+category: 'CI/CD'
+icon: 'rotate-ccw'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'deployment_status.created'
+  conditionGroups:
+    - conditions:
+        - path: 'deployment_status.state'
+          operator: 'equals'
+          value: 'failure'
+promptTemplate: |
+  A deployment has failed in {{event.repo}}.
+
+  ## Investigation and rollback
+
+  ### 1. Gather deployment context
+  - Get the failed deployment details: `gh api repos/{{event.repo}}/deployments --jq '.[0] | {id, sha, environment, created_at, description}'`
+  - Get the deployment status details: `gh api repos/{{event.repo}}/deployments --jq '.[0].id' | xargs -I{} gh api repos/{{event.repo}}/deployments/{}/statuses --jq '.[0]'`
+  - Find the previous successful deployment in the same environment:
+    ```
+    gh api repos/{{event.repo}}/deployments --jq '[.[] | select(.environment == "<env>")] | .[1] | {id, sha}'
+    ```
+    (Replace `<env>` with the environment from the failed deployment)
+  - Get the commit range between the last successful deployment and this failed one with `git log <prev_sha>..<failed_sha> --oneline`
+
+  ### 2. Identify the breaking changes
+  - For each commit in the range, read the diff to understand what changed
+  - Look for likely culprits: database migrations, config changes, new dependencies, API contract changes, infrastructure modifications
+  - Check if any deployment-specific files changed (Dockerfile, CI/CD configs, environment variables)
+
+  ### 3. Assess the situation
+  - **Code issue** — a bug in the application code caused the failure. Identify the specific commit(s)
+  - **Migration issue** — a database or schema migration failed. Check migration files for errors
+  - **Infrastructure issue** — the deployment pipeline itself failed (not a code problem). Document the infrastructure error
+  - **Dependency issue** — a new or updated dependency caused the failure
+
+  ### 4. Create a post-mortem issue
+  Open an issue titled "Deployment failure investigation — <environment>" with:
+  - **Environment:** which deployment environment failed
+  - **Failed SHA:** the commit that was deployed
+  - **Root cause analysis:** what went wrong and why
+  - **Affected commits:** list each commit in the deployment range with a one-line summary
+  - **Classification:** code issue, migration issue, infrastructure issue, or dependency issue
+  - **Recommended action:** revert specific commits, fix forward, or re-deploy after infra fix
+  - Label with `deployment-failure` and `urgent`
+
+  ### 5. Create a revert PR (code issues only)
+  If the failure is clearly caused by a specific code change:
+  - Create a revert of the offending commit(s): `git revert <sha> --no-edit`
+  - Open a PR with title: "revert: rollback deployment failure in <environment>"
+  - In the PR description, include:
+    - Link to the post-mortem issue
+    - **What failed:** the deployment environment and error symptoms
+    - **Root cause:** the specific commit(s) and what they changed
+    - **Revert scope:** which commits are being reverted
+    - **Follow-up:** what needs to happen before re-deploying
+
+  If the root cause is unclear, infrastructure-related, or involves migrations, do NOT create a revert PR — only create the investigation issue. Reverting migrations or infrastructure changes blindly can make things worse.
+model: null
+variables: []

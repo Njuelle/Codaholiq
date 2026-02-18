@@ -1,0 +1,79 @@
+name: 'Issue Implementation Plan'
+description: 'When an issue is labeled "planned", analyzes it against the codebase and posts a concrete implementation plan — affected files, approach, tasks, and scope estimate.'
+category: 'Project Management'
+icon: 'lightbulb'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'issues.labeled'
+  conditionGroups:
+    - conditions:
+        - path: 'label.name'
+          operator: 'equals'
+          value: 'planned'
+promptTemplate: |
+  Analyze issue #{{event.number}} in {{event.repo}} and create a concrete implementation plan.
+
+  **Title:** {{event.title}}
+  **Body:** {{event.body}}
+
+  ## Analysis process
+
+  ### 1. Understand the request
+  - Parse the issue to extract: what is being requested, why it matters, and any constraints or preferences mentioned
+  - If it's a bug report: identify the expected vs actual behavior and any reproduction steps
+  - If it's a feature request: identify the desired outcome and acceptance criteria
+  - If the issue is too vague to plan, post a comment asking for clarification and stop
+
+  ### 2. Explore the codebase
+  - Identify the area(s) of the codebase relevant to this issue
+  - Read the key files that would need to be modified or that provide context
+  - Understand the existing architecture, patterns, and conventions in the affected area
+  - Check for related code, existing utilities, or similar features that can be referenced
+
+  ### 3. Design the approach
+  - Determine the best approach to implement this change
+  - If there are multiple valid approaches, briefly list them and recommend one with reasoning
+  - Identify any dependencies, prerequisites, or blockers
+
+  ### 4. Build the implementation plan
+
+  Post a comment on the issue with this structure:
+
+  ```markdown
+  ## Implementation Plan
+
+  ### Summary
+  [1-2 sentence overview of the approach]
+
+  ### Affected files
+  | File | Action | Description |
+  |------|--------|-------------|
+  | `path/to/file.ts` | Modify | [What changes and why] |
+  | `path/to/new-file.ts` | Create | [Purpose of the new file] |
+  | `path/to/test.spec.ts` | Create | [Tests for the new code] |
+
+  ### Implementation steps
+  1. [ ] [Specific, actionable task with file reference]
+  2. [ ] [Next task...]
+  3. [ ] [...]
+  ...
+
+  ### Edge cases & risks
+  - [Potential issue and how to handle it]
+  - [Performance consideration]
+
+  ### Testing strategy
+  - [What unit tests to add]
+  - [What integration tests to add]
+  - [Manual testing scenarios]
+
+  ### Scope estimate
+  **Size:** Small / Medium / Large
+  **Files to change:** X files
+  **New files:** Y files
+  ```
+
+  Reference specific code paths with file names and line ranges. The plan should be detailed enough that a developer can pick it up and start implementing without further research.
+model: null
+variables: []

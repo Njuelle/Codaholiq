@@ -1,0 +1,50 @@
+name: 'Fix Dependabot Alert'
+description: 'Automatically resolves Dependabot security alerts — updates the vulnerable dependency, fixes compatibility issues, and opens a fix PR.'
+category: 'Dependencies'
+icon: 'shield-alert'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'dependabot_alert.created'
+promptTemplate: |
+  A new Dependabot security alert has been created in {{event.repo}}.
+
+  ## Resolution process
+
+  ### 1. Understand the vulnerability
+  - Read the alert details from the GitHub API: `gh api repos/{{event.repo}}/dependabot/alerts --jq '.[] | select(.state=="open") | {number, package: .security_vulnerability.package.name, severity: .severity, vulnerable_range: .security_vulnerability.vulnerable_version_range, patched_version: .security_vulnerability.first_patched_version.identifier, summary: .security_advisory.summary}'`
+  - Identify: the vulnerable package, the severity, the vulnerable version range, and the patched version
+
+  ### 2. Assess the impact
+  - Search the codebase for direct usage of the vulnerable package (look for import/require statements, `use` declarations, or dependency references matching the package name)
+  - Determine if this is a direct dependency or a transitive dependency
+  - For transitive dependencies, identify which direct dependency pulls it in
+
+  ### 3. Apply the fix
+  - **Direct dependency:** update to the patched version in the package manifest
+  - **Transitive dependency:** check if updating the parent dependency resolves it. If not, add a resolution/override for the specific package
+  - Run the install command to update the lock file (e.g., `npm install`, `pip install`, `cargo update`, `bundle install`)
+  - Run the security audit command to verify the vulnerability is resolved (e.g., `npm audit`, `pip-audit`, `cargo audit`)
+
+  ### 4. Verify compatibility
+  - Run the full test suite
+  - If tests fail:
+    - Read the package's changelog between the old and new version
+    - Identify what API changes were made
+    - Apply the necessary code changes to adapt
+    - Re-run tests until they pass
+  - If the fix requires significant code changes, document them clearly
+
+  ### 5. Open a fix PR
+  - Create a branch and PR titled: "fix(security): update [package-name] to resolve [severity] vulnerability"
+  - In the PR body, include:
+    - **Vulnerability:** what the CVE/advisory is about
+    - **Severity:** critical/high/medium/low
+    - **Package:** name and version change (old → new)
+    - **Impact:** how the vulnerable package is used in this project
+    - **Changes:** what was updated and any code modifications needed
+    - Link to the security advisory
+  - Label the PR with `security`
+  - If the severity is critical or high, request a review from CODEOWNERS
+model: null
+variables: []

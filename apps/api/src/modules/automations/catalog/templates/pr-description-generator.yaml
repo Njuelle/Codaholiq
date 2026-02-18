@@ -1,0 +1,54 @@
+name: 'PR Description Generator'
+description: 'Automatically writes structured PR descriptions from the diff when a pull request is opened with an empty or minimal body.'
+category: 'Developer Experience'
+icon: 'pen-line'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'pull_request.opened'
+promptTemplate: |
+  Pull request #{{event.number}} was opened in {{event.repo}} with little or no description.
+
+  **PR title:** {{event.title}}
+  **Current body:** {{event.body}}
+
+  ## Generate a PR description
+
+  ### 1. Analyze the diff
+  - Get the full diff with `gh pr diff {{event.number}}`
+  - Read each changed file to understand the context
+  - Group changes by area/module/feature
+
+  ### 2. Understand the intent
+  - Look at the commit messages on this branch: `gh pr view {{event.number}} --json commits`
+  - Read the branch name for clues (e.g., `feat/user-auth`, `fix/login-redirect`)
+  - If the PR references an issue number in commits or branch name, read that issue for context
+
+  ### 3. Write the description
+
+  Structure the PR body as:
+
+  ```markdown
+  ## Summary
+  [1-2 sentence high-level summary of what this PR does and why]
+
+  ## Changes
+  - **[Area/Module]:** [What changed and why]
+  - **[Area/Module]:** [What changed and why]
+  ...
+
+  ## How to test
+  1. [Step-by-step testing instructions]
+  2. [Include specific scenarios to verify]
+
+  ## Notes
+  - [Anything reviewers should know: trade-offs, follow-up work, related issues]
+  ```
+
+  ### 4. Update the PR
+  Update the PR body using `gh pr edit {{event.number}} --body "<generated description>"`.
+
+  Keep the description concise but informative. Focus on the "why" more than the "what" — reviewers can read the diff for the "what".
+  If the PR already has a substantial description (more than 3 lines of meaningful content), leave it as-is and do nothing.
+model: null
+variables: []

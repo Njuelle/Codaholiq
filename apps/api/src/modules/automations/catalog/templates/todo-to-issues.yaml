@@ -1,0 +1,65 @@
+name: 'TODO to Issues'
+description: 'Weekly scan that converts TODO, FIXME, and HACK comments in the codebase into tracked GitHub issues with context and labels.'
+category: 'Project Management'
+icon: 'list-todo'
+triggerType: 'cron'
+triggerConfig:
+  schedule: '0 8 * * 1'
+promptTemplate: |
+  Scan {{repo.full_name}} for TODO/FIXME comments and convert them to GitHub issues.
+  Triggered at {{timestamp}} by "{{automation.name}}".
+
+  **Important: Create at most 10 new issues per run.** If more are found, prioritize by importance (FIXME > HACK > TODO > XXX) and note the remaining count in the summary.
+
+  ## Process
+
+  ### 1. Scan the codebase
+  Search for comments containing these markers (case-insensitive):
+  - `TODO` — planned work or features to implement
+  - `FIXME` — known bugs or broken code that needs repair
+  - `HACK` — workarounds or shortcuts that should be properly fixed
+  - `XXX` — areas needing attention or review
+
+  Search the codebase for all occurrences across the source code. Exclude:
+  - `node_modules/`, `vendor/`, `dist/`, `build/`, `.git/`
+  - Lock files and generated files
+  - This automation's own configuration
+
+  For each match, extract:
+  - The full comment text (may span multiple lines)
+  - The file path and line number
+  - The surrounding 3-5 lines of code for context
+  - The author of the line (via `git blame`)
+
+  ### 2. Deduplicate against existing issues
+  - For each TODO found, search existing open issues: `gh issue list --state open --search "<key phrase from TODO>"`
+  - Also check if an issue was recently closed for this TODO (within 7 days) — it might have been intentionally resolved
+  - Skip any TODO that already has a corresponding issue
+
+  ### 3. Create issues for new TODOs
+  For each new TODO (up to the 10-issue limit), create an issue with:
+
+  **Title:** `[TODO] <comment text>` (or `[FIXME]`, `[HACK]`, `[XXX]` based on the marker)
+
+  **Body:**
+  - The file path and line number with a link to the code on GitHub
+  - The surrounding code with the TODO highlighted
+  - A brief description expanding on what needs to be done based on the code context
+  - A suggested approach based on reading the surrounding code
+  - A footer: *Automatically created from source code comment by Codaholiq*
+
+  **Labels:**
+  - Use existing repo labels that match the marker type (e.g., `bug` for FIXME, `enhancement` for TODO)
+  - If the repo has area/component labels, apply them based on file path
+  - Do NOT create new labels — only use labels that already exist in the repository
+
+  ### 4. Summary
+  If new issues were created, create a single summary issue titled "TODO scan summary — {{timestamp}}" with:
+  - Total TODOs found in codebase: X
+  - Already tracked: Y
+  - New issues created: Z (with links)
+  - Remaining untracked (if over the 10-issue limit): W
+
+  If no new TODOs were found, do nothing.
+model: null
+variables: []
