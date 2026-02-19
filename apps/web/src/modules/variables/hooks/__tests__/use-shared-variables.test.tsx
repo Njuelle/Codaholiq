@@ -2,7 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/msw-server';
-import { mockSharedVariable } from '@/test/factories';
+
 import { useSharedVariables } from '../use-shared-variables';
 import type { ReactNode } from 'react';
 
@@ -31,7 +31,7 @@ describe('useSharedVariables', () => {
     expect(result.current.isError).toBe(false);
   });
 
-  it('should return empty array when orgId is 0', async () => {
+  it('should return empty array when orgId is 0', () => {
     const { result } = renderHook(() => useSharedVariables({ orgId: 0 }), {
       wrapper: createWrapper(),
     });

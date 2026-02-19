@@ -10,14 +10,16 @@ const mockOff = vi.fn();
 const mockQuit = vi.fn().mockResolvedValue('OK');
 
 vi.mock('ioredis', () => ({
-  default: vi.fn(() => ({
-    publish: mockPublish,
-    subscribe: mockSubscribe,
-    unsubscribe: mockUnsubscribe,
-    on: mockOn,
-    off: mockOff,
-    quit: mockQuit,
-  })),
+  default: vi.fn(function () {
+    return {
+      publish: mockPublish,
+      subscribe: mockSubscribe,
+      unsubscribe: mockUnsubscribe,
+      on: mockOn,
+      off: mockOff,
+      quit: mockQuit,
+    };
+  }),
 }));
 
 describe('RedisLogPublisherService', () => {
@@ -88,7 +90,7 @@ describe('RedisLogPublisherService', () => {
       service.subscribe({ executionId: 5, onMessage });
 
       // Extract the handler registered via mockOn
-      const handler = mockOn.mock.calls[mockOn.mock.calls.length - 1]![1] as (
+      const handler = mockOn.mock.calls[mockOn.mock.calls.length - 1][1] as (
         ch: string,
         raw: string,
       ) => void;
@@ -103,7 +105,7 @@ describe('RedisLogPublisherService', () => {
       const onMessage = vi.fn();
       service.subscribe({ executionId: 5, onMessage });
 
-      const handler = mockOn.mock.calls[mockOn.mock.calls.length - 1]![1] as (
+      const handler = mockOn.mock.calls[mockOn.mock.calls.length - 1][1] as (
         ch: string,
         raw: string,
       ) => void;

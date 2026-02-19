@@ -145,7 +145,9 @@ describe('ExecutionProcessor', () => {
       ]);
 
       // Speed up the sleep for tests
-      vi.spyOn(processor as never, 'sleep').mockResolvedValue(undefined);
+      vi.spyOn(processor as unknown as { sleep: () => Promise<void> }, 'sleep').mockResolvedValue(
+        undefined,
+      );
 
       await processor.process(makeDispatchJob());
 
@@ -190,7 +192,9 @@ describe('ExecutionProcessor', () => {
         orgId: 1,
       });
 
-      vi.spyOn(processor as never, 'sleep').mockResolvedValue(undefined);
+      vi.spyOn(processor as unknown as { sleep: () => Promise<void> }, 'sleep').mockResolvedValue(
+        undefined,
+      );
 
       await expect(processor.process(makeDispatchJob())).rejects.toThrow('GitHub API error');
 
@@ -206,7 +210,9 @@ describe('ExecutionProcessor', () => {
 
     it('should still mark as running when run ID detection fails', async () => {
       githubApi.listWorkflowRuns.mockResolvedValue([]); // No runs found
-      vi.spyOn(processor as never, 'sleep').mockResolvedValue(undefined);
+      vi.spyOn(processor as unknown as { sleep: () => Promise<void> }, 'sleep').mockResolvedValue(
+        undefined,
+      );
 
       await processor.process(makeDispatchJob());
 
@@ -443,7 +449,9 @@ describe('ExecutionProcessor', () => {
         automationName: 'Deploy',
         orgId: 42,
       });
-      vi.spyOn(processor as never, 'sleep').mockResolvedValue(undefined);
+      vi.spyOn(processor as unknown as { sleep: () => Promise<void> }, 'sleep').mockResolvedValue(
+        undefined,
+      );
 
       await expect(processor.process(makeDispatchJob())).rejects.toThrow('dispatch error');
 

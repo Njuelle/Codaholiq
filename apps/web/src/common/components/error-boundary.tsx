@@ -39,7 +39,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <AlertTriangle className="h-12 w-12 text-destructive" />
           <h1 className="text-2xl font-bold">Something went wrong</h1>
           <p className="text-muted-foreground">
-            {process.env.NODE_ENV !== 'production'
+            {import.meta.env.MODE !== 'production'
               ? this.state.error?.message
               : 'An unexpected error occurred. Please try again.'}
           </p>

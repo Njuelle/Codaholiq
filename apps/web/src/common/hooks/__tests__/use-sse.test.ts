@@ -76,14 +76,17 @@ describe('useSSE', () => {
 
   it('should close connection on unmount', () => {
     const abortSpy = vi.fn();
-    vi.spyOn(globalThis, 'AbortController').mockReturnValue({
-      signal: {
-        aborted: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      } as unknown as AbortSignal,
-      abort: abortSpy,
-    } as unknown as AbortController);
+    vi.spyOn(globalThis, 'AbortController').mockImplementation(function (this: AbortController) {
+      Object.assign(this, {
+        signal: {
+          aborted: false,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        } as unknown as AbortSignal,
+        abort: abortSpy,
+      });
+      return this;
+    } as unknown as () => AbortController);
 
     vi.spyOn(globalThis, 'fetch').mockImplementation(
       () => new Promise(() => {}), // Never resolves

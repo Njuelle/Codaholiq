@@ -17,18 +17,12 @@ const automations = [
   mockAutomation({ id: 2, name: 'Nightly Build' }),
 ];
 
-const defaultProps: {
-  status: undefined;
-  automationId: undefined;
-  automations: typeof automations;
-  onStatusChange: ReturnType<typeof vi.fn>;
-  onAutomationIdChange: ReturnType<typeof vi.fn>;
-} = {
+const defaultProps = {
   status: undefined,
   automationId: undefined,
   automations,
-  onStatusChange: vi.fn(),
-  onAutomationIdChange: vi.fn(),
+  onStatusChange: vi.fn<(status: string | undefined) => void>(),
+  onAutomationIdChange: vi.fn<(id: number | undefined) => void>(),
 };
 
 describe('ExecutionFilters', () => {

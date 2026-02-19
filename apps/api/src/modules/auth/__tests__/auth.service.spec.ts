@@ -15,20 +15,20 @@ function createMockRedis() {
   };
 }
 
-function createMockAuthRepository(): Record<string, ReturnType<typeof vi.fn>> {
+function createMockAuthRepository() {
   return {
     upsertUser: vi.fn(),
     findUserById: vi.fn(),
     findUserByGithubId: vi.fn(),
-    createRefreshToken: vi.fn(),
+    createRefreshToken: vi.fn<(...args: never[]) => Promise<unknown>>(),
     findRefreshToken: vi.fn(),
-    withLockedRefreshToken: vi.fn(),
+    withLockedRefreshToken: vi.fn<(...args: never[]) => Promise<unknown>>(),
     revokeRefreshToken: vi.fn(),
     revokeAllUserTokens: vi.fn(),
   };
 }
 
-function createMockOrgRepository(): Record<string, ReturnType<typeof vi.fn>> {
+function createMockOrgRepository() {
   return {
     createOrg: vi.fn(),
     findOrgById: vi.fn(),

@@ -131,6 +131,18 @@ npm run db:studio              # Open Drizzle Studio
 docker compose up -d           # Start Postgres + Redis
 ```
 
+## Verification (mandatory after every change)
+
+After making any code changes, **always** run typecheck and lint, and fix all errors before considering the task complete:
+
+```bash
+npm run typecheck              # Must pass with zero errors
+npm run lint                   # Must pass with zero errors — fix all warnings and errors, do not suppress them
+npm test                       # All tests must pass across both workspaces
+```
+
+If any command reports errors, fix them immediately. Do not leave typecheck, lint, or test errors for the user to resolve. Iterate until all three commands pass cleanly.
+
 ## Coding standards
 
 ### General rules

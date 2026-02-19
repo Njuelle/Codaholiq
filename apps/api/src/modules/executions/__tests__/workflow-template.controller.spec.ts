@@ -21,18 +21,14 @@ describe('WorkflowTemplateController', () => {
 
   describe('GET /workflow-template', () => {
     it('should return the workflow template', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/workflow-template')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/workflow-template').expect(200);
 
       expect(response.body).toHaveProperty('template');
       expect(typeof response.body.template).toBe('string');
     });
 
     it('should return a valid GitHub Actions workflow', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/workflow-template')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/workflow-template').expect(200);
 
       const { template } = response.body as { template: string };
 
@@ -42,9 +38,7 @@ describe('WorkflowTemplateController', () => {
     });
 
     it('should include prompt and model inputs', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/workflow-template')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/workflow-template').expect(200);
 
       const { template } = response.body as { template: string };
 
@@ -53,9 +47,7 @@ describe('WorkflowTemplateController', () => {
     });
 
     it('should include required permissions', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/workflow-template')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/workflow-template').expect(200);
 
       const { template } = response.body as { template: string };
 
