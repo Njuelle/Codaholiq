@@ -115,6 +115,175 @@ describe('GitHubApiService', () => {
     });
   });
 
+  describe('listRepositories', () => {
+    it('should return mapped repositories from paginated GitHub API', async () => {
+      const mockOctokit = {
+        paginate: vi.fn().mockResolvedValue([
+          {
+            id: 1,
+            name: 'my-repo',
+            full_name: 'owner/my-repo',
+            owner: { login: 'owner' },
+            default_branch: 'main',
+            private: false,
+            language: 'TypeScript',
+            archived: false,
+          },
+        ]),
+        rest: { apps: { listReposAccessibleToInstallation: vi.fn() } },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      const repos = await service.listRepositories({ installationId: 1001 });
+
+      expect(repos).toEqual([
+        {
+          id: 1,
+          name: 'my-repo',
+          full_name: 'owner/my-repo',
+          owner: { login: 'owner' },
+          default_branch: 'main',
+          private: false,
+          language: 'TypeScript',
+          archived: false,
+        },
+      ]);
+    });
+  });
+
+  describe('getRepository', () => {
+    it('should return a single mapped repository', async () => {
+      const mockOctokit = {
+        rest: {
+          repos: {
+            get: vi.fn().mockResolvedValue({
+              data: {
+                id: 2,
+                name: 'other-repo',
+                full_name: 'owner/other-repo',
+                owner: { login: 'owner' },
+                default_branch: 'develop',
+                private: true,
+                language: null,
+                archived: false,
+              },
+            }),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      const repo = await service.getRepository({
+        installationId: 1001,
+        owner: 'owner',
+        repo: 'other-repo',
+      });
+
+      expect(repo).toEqual({
+        id: 2,
+        name: 'other-repo',
+        full_name: 'owner/other-repo',
+        owner: { login: 'owner' },
+        default_branch: 'develop',
+        private: true,
+        language: null,
+        archived: false,
+      });
+    });
+  });
+
+  describe('dispatchWorkflow', () => {
+    it('should dispatch a workflow with correct params', async () => {
+      const mockOctokit = {
+        rest: {
+          actions: {
+            createWorkflowDispatch: vi.fn().mockResolvedValue({}),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      await service.dispatchWorkflow({
+        installationId: 1001,
+        owner: 'owner',
+        repo: 'repo',
+        workflowFile: 'codaholiq.yml',
+        ref: 'main',
+        inputs: { prompt: 'Fix the bug' },
+      });
+
+      expect(mockOctokit.rest.actions.createWorkflowDispatch).toHaveBeenCalledWith({
+        owner: 'owner',
+        repo: 'repo',
+        workflow_id: 'codaholiq.yml',
+        ref: 'main',
+        inputs: { prompt: 'Fix the bug' },
+      });
+    });
+  });
+
+  describe('getWorkflowRun', () => {
+    it('should return a mapped workflow run', async () => {
+      const mockOctokit = {
+        rest: {
+          actions: {
+            getWorkflowRun: vi.fn().mockResolvedValue({
+              data: {
+                id: 500,
+                status: 'completed',
+                conclusion: 'success',
+                html_url: 'https://github.com/owner/repo/actions/runs/500',
+              },
+            }),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      const run = await service.getWorkflowRun({
+        installationId: 1001,
+        owner: 'owner',
+        repo: 'repo',
+        runId: 500,
+      });
+
+      expect(run).toEqual({
+        id: 500,
+        status: 'completed',
+        conclusion: 'success',
+        html_url: 'https://github.com/owner/repo/actions/runs/500',
+      });
+    });
+  });
+
+  describe('getWorkflowRunLogs', () => {
+    it('should return workflow run logs as ArrayBuffer', async () => {
+      const mockBuffer = new ArrayBuffer(8);
+      const mockOctokit = {
+        rest: {
+          actions: {
+            downloadWorkflowRunLogs: vi.fn().mockResolvedValue({ data: mockBuffer }),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      const logs = await service.getWorkflowRunLogs({
+        installationId: 1001,
+        owner: 'owner',
+        repo: 'repo',
+        runId: 600,
+      });
+
+      expect(logs).toBe(mockBuffer);
+      expect(mockOctokit.rest.actions.downloadWorkflowRunLogs).toHaveBeenCalledWith({
+        owner: 'owner',
+        repo: 'repo',
+        run_id: 600,
+      });
+    });
+  });
+
   describe('checkFileExists', () => {
     it('should return true when file exists', async () => {
       const mockOctokit = {

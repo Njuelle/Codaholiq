@@ -47,4 +47,22 @@ describe('TopBar', () => {
     expect(screen.getByText('alice')).toBeInTheDocument();
     expect(screen.getByText('Sign out')).toBeInTheDocument();
   });
+
+  it('should call logout when Sign out is clicked', async () => {
+    const user2 = userEvent.setup();
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/orgs/:orgId/*" element={<TopBar />} />
+        <Route path="/login" element={<div>Login Page</div>} />
+      </Routes>,
+      { user, org, initialRoute: '/orgs/1/dashboard' },
+    );
+
+    await user2.click(screen.getByRole('button', { name: 'User menu' }));
+    await user2.click(screen.getByText('Sign out'));
+
+    // After logout, navigates to /login
+    expect(await screen.findByText('Login Page')).toBeInTheDocument();
+  });
 });

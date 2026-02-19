@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router-dom';
 import { renderWithProviders } from '@/test/test-utils';
@@ -140,5 +141,48 @@ describe('AutomationsListPage', () => {
     await screen.findByText('Test Automation');
 
     expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+  });
+
+  it('should enable Next button when a full page of results is returned', async () => {
+    server.use(
+      http.get('/api/orgs/:orgId/automations', () => {
+        // Return exactly 20 items (PAGE_SIZE) to enable Next
+        const items = Array.from({ length: 20 }, (_, i) =>
+          mockAutomation({ id: i + 1, name: `Auto ${i + 1}` }),
+        );
+        return HttpResponse.json({ data: items, requestId: 'test-request-id' });
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByText('Auto 1');
+
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
+  });
+
+  it('should open delete confirmation via dropdown menu', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get('/api/orgs/:orgId/automations', () => {
+        return HttpResponse.json({
+          data: [mockAutomation({ id: 1, name: 'To Delete' })],
+          requestId: 'test-request-id',
+        });
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByText('To Delete');
+
+    // Open the dropdown menu
+    await user.click(screen.getByRole('button', { name: 'Open menu' }));
+    // Click Delete in the dropdown
+    await user.click(screen.getByText('Delete'));
+
+    expect(await screen.findByText('Delete Automation')).toBeInTheDocument();
+    expect(screen.getByText(/this action cannot be undone/i)).toBeInTheDocument();
   });
 });

@@ -140,4 +140,33 @@ describe('LogViewer', () => {
 
     expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('Starting execution...'));
   });
+
+  it('should trigger download on download button click', async () => {
+    const user = userEvent.setup();
+    const clickMock = vi.fn();
+    const originalCreateElement = document.createElement.bind(document);
+
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'a') {
+        return { href: '', download: '', click: clickMock } as unknown as HTMLAnchorElement;
+      }
+      return originalCreateElement(tag);
+    });
+
+    const createObjectURLMock = vi.fn().mockReturnValue('blob:test');
+    const revokeObjectURLMock = vi.fn();
+    URL.createObjectURL = createObjectURLMock;
+    URL.revokeObjectURL = revokeObjectURLMock;
+
+    renderLogViewer();
+
+    await screen.findByText('Starting execution...');
+    await user.click(screen.getByRole('button', { name: /download logs/i }));
+
+    expect(createObjectURLMock).toHaveBeenCalled();
+    expect(clickMock).toHaveBeenCalled();
+    expect(revokeObjectURLMock).toHaveBeenCalled();
+
+    vi.restoreAllMocks();
+  });
 });

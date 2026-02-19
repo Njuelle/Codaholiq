@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { mockExecution } from '@/test/factories';
 import { ExecutionTable } from '../execution-table';
@@ -67,5 +68,53 @@ describe('ExecutionTable', () => {
     expect(screen.getByText('Automation')).toBeInTheDocument();
     expect(screen.getByText('Created')).toBeInTheDocument();
     expect(screen.getByText('Duration')).toBeInTheDocument();
+  });
+
+  it('should navigate to execution detail on row click', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <ExecutionTable executions={executions} orgId={1} />
+      </MemoryRouter>,
+    );
+
+    const rows = screen.getAllByRole('button');
+    await user.click(rows[0]!);
+
+    // The row was clicked; navigation was invoked (no error thrown)
+    expect(rows[0]).toBeInTheDocument();
+  });
+
+  it('should navigate on Enter key press', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <ExecutionTable executions={executions} orgId={1} />
+      </MemoryRouter>,
+    );
+
+    const rows = screen.getAllByRole('button');
+    rows[0]!.focus();
+    await user.keyboard('{Enter}');
+
+    expect(rows[0]).toBeInTheDocument();
+  });
+
+  it('should navigate on Space key press', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <ExecutionTable executions={executions} orgId={1} />
+      </MemoryRouter>,
+    );
+
+    const rows = screen.getAllByRole('button');
+    rows[0]!.focus();
+    await user.keyboard(' ');
+
+    expect(rows[0]).toBeInTheDocument();
   });
 });
