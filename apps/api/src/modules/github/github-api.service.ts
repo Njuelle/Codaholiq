@@ -40,6 +40,22 @@ export interface WorkflowRun {
   readonly html_url: string;
 }
 
+export interface GitHubRef {
+  readonly ref: string;
+  readonly sha: string;
+}
+
+export interface GitHubFileCommit {
+  readonly sha: string;
+  readonly htmlUrl: string;
+}
+
+export interface GitHubPullRequest {
+  readonly number: number;
+  readonly htmlUrl: string;
+  readonly title: string;
+}
+
 @Injectable()
 export class GitHubApiService {
   private readonly logger = new Logger(GitHubApiService.name);
@@ -253,6 +269,136 @@ export class GitHubApiService {
     }));
   }
 
+  async getBranchRef({
+    installationId,
+    owner,
+    repo,
+    branch,
+  }: {
+    installationId: number;
+    owner: string;
+    repo: string;
+    branch: string;
+  }): Promise<GitHubRef> {
+    const octokit = await this.getInstallationOctokit({ installationId });
+    const { data } = await octokit.rest.git.getRef({
+      owner,
+      repo,
+      ref: `heads/${branch}`,
+    });
+    return { ref: data.ref, sha: data.object.sha };
+  }
+
+  async createBranchRef({
+    installationId,
+    owner,
+    repo,
+    branch,
+    sha,
+  }: {
+    installationId: number;
+    owner: string;
+    repo: string;
+    branch: string;
+    sha: string;
+  }): Promise<GitHubRef> {
+    const octokit = await this.getInstallationOctokit({ installationId });
+    const { data } = await octokit.rest.git.createRef({
+      owner,
+      repo,
+      ref: `refs/heads/${branch}`,
+      sha,
+    });
+    return { ref: data.ref, sha: data.object.sha };
+  }
+
+  async deleteBranchRef({
+    installationId,
+    owner,
+    repo,
+    branch,
+  }: {
+    installationId: number;
+    owner: string;
+    repo: string;
+    branch: string;
+  }): Promise<void> {
+    const octokit = await this.getInstallationOctokit({ installationId });
+    await octokit.rest.git.deleteRef({
+      owner,
+      repo,
+      ref: `heads/${branch}`,
+    });
+  }
+
+  async createOrUpdateFileContents({
+    installationId,
+    owner,
+    repo,
+    path,
+    message,
+    content,
+    branch,
+  }: {
+    installationId: number;
+    owner: string;
+    repo: string;
+    path: string;
+    message: string;
+    content: string;
+    branch: string;
+  }): Promise<GitHubFileCommit> {
+    const octokit = await this.getInstallationOctokit({ installationId });
+    const { data } = await octokit.rest.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path,
+      message,
+      content: Buffer.from(content).toString('base64'),
+      branch,
+    });
+    if (!data.commit.sha || !data.commit.html_url) {
+      throw new Error(`GitHub API returned incomplete commit data for ${owner}/${repo}:${path}`);
+    }
+    return {
+      sha: data.commit.sha,
+      htmlUrl: data.commit.html_url,
+    };
+  }
+
+  async createPullRequest({
+    installationId,
+    owner,
+    repo,
+    title,
+    body,
+    head,
+    base,
+  }: {
+    installationId: number;
+    owner: string;
+    repo: string;
+    title: string;
+    body: string;
+    head: string;
+    base: string;
+  }): Promise<GitHubPullRequest> {
+    const octokit = await this.getInstallationOctokit({ installationId });
+    const { data } = await octokit.rest.pulls.create({
+      owner,
+      repo,
+      title,
+      body,
+      head,
+      base,
+    });
+    return {
+      number: data.number,
+      htmlUrl: data.html_url,
+      title: data.title,
+    };
+  }
+
   async checkFileExists({
     installationId,
     owner,
@@ -271,6 +417,32 @@ export class GitHubApiService {
     } catch (err: unknown) {
       if (err instanceof Error && 'status' in err && (err as { status: number }).status === 404) {
         return false;
+      }
+      throw err;
+    }
+  }
+
+  async listRepositorySecrets({
+    installationId,
+    owner,
+    repo,
+  }: {
+    installationId: number;
+    owner: string;
+    repo: string;
+  }): Promise<string[]> {
+    const octokit = await this.getInstallationOctokit({ installationId });
+    try {
+      const { data } = await octokit.rest.actions.listRepoSecrets({
+        owner,
+        repo,
+        per_page: 100,
+      });
+      return data.secrets.map((s) => s.name);
+    } catch (err: unknown) {
+      if (err instanceof Error && 'status' in err && (err as { status: number }).status === 403) {
+        this.logger.warn(`No secrets:read permission for ${owner}/${repo}`);
+        return [];
       }
       throw err;
     }

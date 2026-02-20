@@ -29,6 +29,9 @@ export function RepositoryDetailPage(): ReactElement {
   const { repo, isLoading, isError, error } = useRepository({ orgId, repoId });
   const {
     workflowFileExists,
+    secretsConfigured,
+    hasAnthropicKey,
+    hasOAuthToken,
     isLoading: isSetupLoading,
     isError: isSetupError,
   } = useSetupStatus({ orgId, repoId });
@@ -93,8 +96,15 @@ export function RepositoryDetailPage(): ReactElement {
         <div className="lg:col-span-2 space-y-6">
           <SetupStatusCard
             workflowFileExists={workflowFileExists}
+            secretsConfigured={secretsConfigured}
+            hasAnthropicKey={hasAnthropicKey}
+            hasOAuthToken={hasOAuthToken}
+            repoFullName={repo.fullName}
             isLoading={isSetupLoading}
             isError={isSetupError}
+            orgId={orgId}
+            repoId={repoId}
+            canEdit={hasPermission(Permission.ORG_SETTINGS_EDIT)}
           />
           <RepoAutomationsSection orgId={orgId} repoId={repoId} />
           <RepoExecutionsSection orgId={orgId} repoId={repoId} />

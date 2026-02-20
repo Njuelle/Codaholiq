@@ -18,6 +18,22 @@ function createMockRepoRepository() {
 function createMockGitHubApiService() {
   return {
     checkFileExists: vi.fn().mockResolvedValue(false),
+    listRepositorySecrets: vi.fn().mockResolvedValue([]),
+    getBranchRef: vi.fn().mockResolvedValue({ ref: 'refs/heads/main', sha: 'abc123' }),
+    createBranchRef: vi.fn().mockResolvedValue({
+      ref: 'refs/heads/codaholiq/add-workflow',
+      sha: 'abc123',
+    }),
+    createOrUpdateFileContents: vi.fn().mockResolvedValue({
+      sha: 'commit-sha',
+      htmlUrl: 'https://github.com/owner/repo/commit/commit-sha',
+    }),
+    createPullRequest: vi.fn().mockResolvedValue({
+      number: 42,
+      htmlUrl: 'https://github.com/owner/test-repo/pull/42',
+      title: 'Add Codaholiq GitHub Actions workflow',
+    }),
+    deleteBranchRef: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -37,8 +53,10 @@ function makeRepo(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
     orgId: 10,
+    owner: 'owner',
     name: 'test-repo',
     fullName: 'owner/test-repo',
+    defaultBranch: 'main',
     webhookActive: true,
     ...overrides,
   };
@@ -165,11 +183,125 @@ describe('RepositoriesService', () => {
     });
   });
 
+  describe('setupWorkflowPR', () => {
+    it('should create PR and return URL', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repoRepo.findInstallationByOrgId.mockResolvedValue({ id: 1, installationId: 5001 });
+      githubApiService.checkFileExists.mockResolvedValue(false);
+
+      const result = await service.setupWorkflowPR({ orgId: 10, repoId: 1 });
+
+      expect(result).toEqual({
+        pullRequestUrl: 'https://github.com/owner/test-repo/pull/42',
+      });
+      expect(githubApiService.getBranchRef).toHaveBeenCalledWith(
+        expect.objectContaining({ branch: 'main', owner: 'owner', repo: 'test-repo' }),
+      );
+      expect(githubApiService.createBranchRef).toHaveBeenCalledWith(
+        expect.objectContaining({ branch: 'codaholiq/add-workflow', sha: 'abc123' }),
+      );
+      expect(githubApiService.createOrUpdateFileContents).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: '.github/workflows/codaholiq.yml',
+          branch: 'codaholiq/add-workflow',
+        }),
+      );
+      expect(githubApiService.createPullRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          head: 'codaholiq/add-workflow',
+          base: 'main',
+        }),
+      );
+    });
+
+    it('should throw NotFoundException if repo not found', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(undefined);
+
+      await expect(service.setupWorkflowPR({ orgId: 10, repoId: 999 })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw NotFoundException if repo belongs to different org', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(makeRepo({ orgId: 20 }));
+
+      await expect(service.setupWorkflowPR({ orgId: 10, repoId: 1 })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw BadRequestException if no installation found', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repoRepo.findInstallationByOrgId.mockResolvedValue(undefined);
+
+      await expect(service.setupWorkflowPR({ orgId: 10, repoId: 1 })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if workflow file already exists', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repoRepo.findInstallationByOrgId.mockResolvedValue({ id: 1, installationId: 5001 });
+      githubApiService.checkFileExists.mockResolvedValue(true);
+
+      await expect(service.setupWorkflowPR({ orgId: 10, repoId: 1 })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if branch already exists (422)', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repoRepo.findInstallationByOrgId.mockResolvedValue({ id: 1, installationId: 5001 });
+      githubApiService.checkFileExists.mockResolvedValue(false);
+      const error = new Error('Reference already exists') as Error & { status: number };
+      error.status = 422;
+      githubApiService.createBranchRef.mockRejectedValue(error);
+
+      await expect(service.setupWorkflowPR({ orgId: 10, repoId: 1 })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should clean up branch if createPullRequest fails', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repoRepo.findInstallationByOrgId.mockResolvedValue({ id: 1, installationId: 5001 });
+      githubApiService.checkFileExists.mockResolvedValue(false);
+      githubApiService.createPullRequest.mockRejectedValue(new Error('PR creation failed'));
+
+      await expect(service.setupWorkflowPR({ orgId: 10, repoId: 1 })).rejects.toThrow(
+        'PR creation failed',
+      );
+
+      expect(githubApiService.deleteBranchRef).toHaveBeenCalledWith(
+        expect.objectContaining({
+          owner: 'owner',
+          repo: 'test-repo',
+          branch: 'codaholiq/add-workflow',
+        }),
+      );
+    });
+
+    it('should still throw original error if branch cleanup also fails', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repoRepo.findInstallationByOrgId.mockResolvedValue({ id: 1, installationId: 5001 });
+      githubApiService.checkFileExists.mockResolvedValue(false);
+      githubApiService.createOrUpdateFileContents.mockRejectedValue(new Error('Commit failed'));
+      githubApiService.deleteBranchRef.mockRejectedValue(new Error('Cleanup failed'));
+
+      await expect(service.setupWorkflowPR({ orgId: 10, repoId: 1 })).rejects.toThrow(
+        'Commit failed',
+      );
+
+      expect(githubApiService.deleteBranchRef).toHaveBeenCalled();
+    });
+  });
+
   describe('getSetupStatus', () => {
     it('should return workflowFileExists true when file exists', async () => {
       repoRepo.findRepositoryById.mockResolvedValue(makeRepo({ owner: 'acme', name: 'app' }));
       repoRepo.findInstallationByOrgId.mockResolvedValue({ id: 1, installationId: 5001 });
       githubApiService.checkFileExists.mockResolvedValue(true);
+      githubApiService.listRepositorySecrets.mockResolvedValue(['ANTHROPIC_API_KEY']);
 
       const result = await service.getSetupStatus({ orgId: 10, repoId: 1 });
 
@@ -180,16 +312,77 @@ describe('RepositoriesService', () => {
         repo: 'app',
         path: '.github/workflows/codaholiq.yml',
       });
+      expect(githubApiService.listRepositorySecrets).toHaveBeenCalledWith({
+        installationId: 5001,
+        owner: 'acme',
+        repo: 'app',
+      });
     });
 
     it('should return workflowFileExists false when file does not exist', async () => {
       repoRepo.findRepositoryById.mockResolvedValue(makeRepo());
       repoRepo.findInstallationByOrgId.mockResolvedValue({ id: 1, installationId: 5001 });
       githubApiService.checkFileExists.mockResolvedValue(false);
+      githubApiService.listRepositorySecrets.mockResolvedValue([]);
 
       const result = await service.getSetupStatus({ orgId: 10, repoId: 1 });
 
       expect(result.workflowFileExists).toBe(false);
+    });
+
+    it('should return secretsConfigured true when ANTHROPIC_API_KEY is set', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repoRepo.findInstallationByOrgId.mockResolvedValue({ id: 1, installationId: 5001 });
+      githubApiService.checkFileExists.mockResolvedValue(true);
+      githubApiService.listRepositorySecrets.mockResolvedValue(['ANTHROPIC_API_KEY', 'OTHER_KEY']);
+
+      const result = await service.getSetupStatus({ orgId: 10, repoId: 1 });
+
+      expect(result.secretsConfigured).toBe(true);
+      expect(result.hasAnthropicKey).toBe(true);
+      expect(result.hasOAuthToken).toBe(false);
+    });
+
+    it('should return secretsConfigured true when CLAUDE_CODE_OAUTH_TOKEN is set', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repoRepo.findInstallationByOrgId.mockResolvedValue({ id: 1, installationId: 5001 });
+      githubApiService.checkFileExists.mockResolvedValue(true);
+      githubApiService.listRepositorySecrets.mockResolvedValue(['CLAUDE_CODE_OAUTH_TOKEN']);
+
+      const result = await service.getSetupStatus({ orgId: 10, repoId: 1 });
+
+      expect(result.secretsConfigured).toBe(true);
+      expect(result.hasAnthropicKey).toBe(false);
+      expect(result.hasOAuthToken).toBe(true);
+    });
+
+    it('should return secretsConfigured true when both keys are set', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repoRepo.findInstallationByOrgId.mockResolvedValue({ id: 1, installationId: 5001 });
+      githubApiService.checkFileExists.mockResolvedValue(true);
+      githubApiService.listRepositorySecrets.mockResolvedValue([
+        'ANTHROPIC_API_KEY',
+        'CLAUDE_CODE_OAUTH_TOKEN',
+      ]);
+
+      const result = await service.getSetupStatus({ orgId: 10, repoId: 1 });
+
+      expect(result.secretsConfigured).toBe(true);
+      expect(result.hasAnthropicKey).toBe(true);
+      expect(result.hasOAuthToken).toBe(true);
+    });
+
+    it('should return secretsConfigured false when no relevant keys are set', async () => {
+      repoRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repoRepo.findInstallationByOrgId.mockResolvedValue({ id: 1, installationId: 5001 });
+      githubApiService.checkFileExists.mockResolvedValue(true);
+      githubApiService.listRepositorySecrets.mockResolvedValue(['UNRELATED_SECRET']);
+
+      const result = await service.getSetupStatus({ orgId: 10, repoId: 1 });
+
+      expect(result.secretsConfigured).toBe(false);
+      expect(result.hasAnthropicKey).toBe(false);
+      expect(result.hasOAuthToken).toBe(false);
     });
 
     it('should throw NotFoundException if repo not found', async () => {

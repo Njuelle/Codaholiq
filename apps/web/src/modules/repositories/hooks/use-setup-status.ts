@@ -9,10 +9,16 @@ interface UseSetupStatusParams {
 
 interface SetupStatusResponse {
   readonly workflowFileExists: boolean;
+  readonly secretsConfigured: boolean;
+  readonly hasAnthropicKey: boolean;
+  readonly hasOAuthToken: boolean;
 }
 
 interface UseSetupStatusReturn {
   readonly workflowFileExists: boolean | undefined;
+  readonly secretsConfigured: boolean | undefined;
+  readonly hasAnthropicKey: boolean | undefined;
+  readonly hasOAuthToken: boolean | undefined;
   readonly isLoading: boolean;
   readonly isError: boolean;
   readonly error: Error | null;
@@ -28,6 +34,9 @@ export function useSetupStatus({ orgId, repoId }: UseSetupStatusParams): UseSetu
 
   return {
     workflowFileExists: data?.workflowFileExists,
+    secretsConfigured: data?.secretsConfigured,
+    hasAnthropicKey: data?.hasAnthropicKey,
+    hasOAuthToken: data?.hasOAuthToken,
     isLoading,
     isError,
     error,

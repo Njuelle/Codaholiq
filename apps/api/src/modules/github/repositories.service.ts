@@ -1,14 +1,19 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { GitHubEntityRepository } from './github-entity.repository';
 import { GitHubApiService } from './github-api.service';
 import { RepoSyncService } from './repo-sync.service';
 import { AutomationService } from '../automations/automations.service';
 import { DEFAULT_WORKFLOW_FILE } from '../automations/automations.schema';
+import { WORKFLOW_TEMPLATE } from '../../common/constants/workflow-template';
 import { repositories } from './github.schema';
 import type { ListReposQuery } from './dto/list-repos.dto';
 
+const WORKFLOW_BRANCH = 'codaholiq/add-workflow';
+
 @Injectable()
 export class RepositoriesService {
+  private readonly logger = new Logger(RepositoriesService.name);
+
   constructor(
     @Inject(GitHubEntityRepository)
     private readonly repoRepository: GitHubEntityRepository,
@@ -75,13 +80,12 @@ export class RepositoriesService {
     return { synced };
   }
 
-  async getSetupStatus({
-    orgId,
-    repoId,
-  }: {
-    orgId: number;
-    repoId: number;
-  }): Promise<{ workflowFileExists: boolean }> {
+  async getSetupStatus({ orgId, repoId }: { orgId: number; repoId: number }): Promise<{
+    workflowFileExists: boolean;
+    secretsConfigured: boolean;
+    hasAnthropicKey: boolean;
+    hasOAuthToken: boolean;
+  }> {
     const repo = await this.repoRepository.findRepositoryById({ id: repoId });
     if (!repo || repo.orgId !== orgId) {
       throw new NotFoundException('Repository not found');
@@ -92,14 +96,136 @@ export class RepositoriesService {
       throw new BadRequestException('No GitHub App installation found for this organization');
     }
 
-    const workflowFileExists = await this.githubApiService.checkFileExists({
+    const [workflowFileExists, secretNames] = await Promise.all([
+      this.githubApiService.checkFileExists({
+        installationId: installation.installationId,
+        owner: repo.owner,
+        repo: repo.name,
+        path: DEFAULT_WORKFLOW_FILE,
+      }),
+      this.githubApiService.listRepositorySecrets({
+        installationId: installation.installationId,
+        owner: repo.owner,
+        repo: repo.name,
+      }),
+    ]);
+
+    const hasAnthropicKey = secretNames.includes('ANTHROPIC_API_KEY');
+    const hasOAuthToken = secretNames.includes('CLAUDE_CODE_OAUTH_TOKEN');
+
+    return {
+      workflowFileExists,
+      secretsConfigured: hasAnthropicKey || hasOAuthToken,
+      hasAnthropicKey,
+      hasOAuthToken,
+    };
+  }
+
+  async setupWorkflowPR({
+    orgId,
+    repoId,
+  }: {
+    orgId: number;
+    repoId: number;
+  }): Promise<{ pullRequestUrl: string }> {
+    const repo = await this.repoRepository.findRepositoryById({ id: repoId });
+    if (!repo || repo.orgId !== orgId) {
+      throw new NotFoundException('Repository not found');
+    }
+
+    const installation = await this.repoRepository.findInstallationByOrgId({ orgId });
+    if (!installation) {
+      throw new BadRequestException('No GitHub App installation found for this organization');
+    }
+
+    const fileExists = await this.githubApiService.checkFileExists({
       installationId: installation.installationId,
       owner: repo.owner,
       repo: repo.name,
       path: DEFAULT_WORKFLOW_FILE,
     });
+    if (fileExists) {
+      throw new BadRequestException('Workflow file already exists in this repository');
+    }
 
-    return { workflowFileExists };
+    const defaultRef = await this.githubApiService.getBranchRef({
+      installationId: installation.installationId,
+      owner: repo.owner,
+      repo: repo.name,
+      branch: repo.defaultBranch,
+    });
+
+    try {
+      await this.githubApiService.createBranchRef({
+        installationId: installation.installationId,
+        owner: repo.owner,
+        repo: repo.name,
+        branch: WORKFLOW_BRANCH,
+        sha: defaultRef.sha,
+      });
+    } catch (err: unknown) {
+      if (err instanceof Error && 'status' in err && (err as { status: number }).status === 422) {
+        throw new BadRequestException(
+          `Branch "${WORKFLOW_BRANCH}" already exists. Please check for an existing PR or delete the branch first.`,
+        );
+      }
+      throw err;
+    }
+
+    try {
+      await this.githubApiService.createOrUpdateFileContents({
+        installationId: installation.installationId,
+        owner: repo.owner,
+        repo: repo.name,
+        path: DEFAULT_WORKFLOW_FILE,
+        message: 'Add Codaholiq workflow file',
+        content: WORKFLOW_TEMPLATE,
+        branch: WORKFLOW_BRANCH,
+      });
+
+      const pr = await this.githubApiService.createPullRequest({
+        installationId: installation.installationId,
+        owner: repo.owner,
+        repo: repo.name,
+        title: 'Add Codaholiq GitHub Actions workflow',
+        body: [
+          '## What this PR does',
+          '',
+          'Adds the Codaholiq workflow file (`.github/workflows/codaholiq.yml`) that enables',
+          'Claude Code automations to be dispatched from the Codaholiq platform.',
+          '',
+          'This workflow supports:',
+          '- `workflow_dispatch` trigger with `prompt` and `model` inputs',
+          '- Automatic dependency installation (npm, yarn, pnpm, bun)',
+          '- Claude Code Action v1 integration',
+          '',
+          '---',
+          '*Created automatically by Codaholiq*',
+        ].join('\n'),
+        head: WORKFLOW_BRANCH,
+        base: repo.defaultBranch,
+      });
+
+      this.logger.log(`Created workflow PR #${pr.number} for ${repo.fullName}`);
+      return { pullRequestUrl: pr.htmlUrl };
+    } catch (err: unknown) {
+      this.logger.warn(
+        `Cleaning up branch ${WORKFLOW_BRANCH} after failed PR creation for ${repo.fullName}`,
+      );
+      try {
+        await this.githubApiService.deleteBranchRef({
+          installationId: installation.installationId,
+          owner: repo.owner,
+          repo: repo.name,
+          branch: WORKFLOW_BRANCH,
+        });
+      } catch (cleanupErr: unknown) {
+        this.logger.error(
+          `Failed to clean up branch ${WORKFLOW_BRANCH} for ${repo.fullName}: ${cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)}`,
+        );
+      }
+      throw err;
+    }
   }
 
   async countByOrgId({ orgId }: { orgId: number }): Promise<number> {

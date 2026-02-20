@@ -33,7 +33,7 @@ describe('useWorkflowTemplate', () => {
     });
 
     expect(result.current.template).toBeDefined();
-    expect(result.current.template).toContain('Claude Code Automation');
+    expect(result.current.template).toContain('Codaholiq');
     expect(result.current.template).toContain('workflow_dispatch');
   });
 });

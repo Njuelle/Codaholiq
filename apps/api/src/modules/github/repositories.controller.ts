@@ -57,8 +57,23 @@ export class RepositoriesController {
   async getSetupStatus(
     @Param('orgId', ParseIntPipe) orgId: number,
     @Param('repoId', ParseIntPipe) repoId: number,
-  ): Promise<{ workflowFileExists: boolean }> {
+  ): Promise<{
+    workflowFileExists: boolean;
+    secretsConfigured: boolean;
+    hasAnthropicKey: boolean;
+    hasOAuthToken: boolean;
+  }> {
     return this.repoService.getSetupStatus({ orgId, repoId });
+  }
+
+  @Post(':repoId/setup-workflow')
+  @RequirePermission(Permission.ORG_SETTINGS_EDIT)
+  @HttpCode(HttpStatus.CREATED)
+  async setupWorkflowPR(
+    @Param('orgId', ParseIntPipe) orgId: number,
+    @Param('repoId', ParseIntPipe) repoId: number,
+  ): Promise<{ pullRequestUrl: string }> {
+    return this.repoService.setupWorkflowPR({ orgId, repoId });
   }
 
   @Get(':repoId')

@@ -38,11 +38,33 @@ describe('useSetupStatus', () => {
     expect(result.current.workflowFileExists).toBe(true);
   });
 
+  it('should return secrets status from API', async () => {
+    const { result } = renderHook(() => useSetupStatus({ orgId: 1, repoId: 1 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(
+      () => {
+        expect(result.current.isLoading).toBe(false);
+      },
+      { timeout: 5000 },
+    );
+
+    expect(result.current.secretsConfigured).toBe(true);
+    expect(result.current.hasAnthropicKey).toBe(true);
+    expect(result.current.hasOAuthToken).toBe(false);
+  });
+
   it('should return workflowFileExists false when not configured', async () => {
     server.use(
       http.get('/api/orgs/:orgId/repos/:repoId/setup-status', () => {
         return HttpResponse.json({
-          data: { workflowFileExists: false },
+          data: {
+            workflowFileExists: false,
+            secretsConfigured: false,
+            hasAnthropicKey: false,
+            hasOAuthToken: false,
+          },
           requestId: 'test-request-id',
         });
       }),
@@ -60,6 +82,7 @@ describe('useSetupStatus', () => {
     );
 
     expect(result.current.workflowFileExists).toBe(false);
+    expect(result.current.secretsConfigured).toBe(false);
   });
 
   it('should not fetch when repoId is 0', () => {
@@ -69,5 +92,6 @@ describe('useSetupStatus', () => {
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.workflowFileExists).toBeUndefined();
+    expect(result.current.secretsConfigured).toBeUndefined();
   });
 });

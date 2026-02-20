@@ -19,6 +19,7 @@ function createMockRepoService() {
     list: vi.fn().mockResolvedValue({ items: [], total: 0 }),
     findById: vi.fn(),
     getSetupStatus: vi.fn(),
+    setupWorkflowPR: vi.fn(),
     triggerSync: vi.fn(),
     updateWebhookActive: vi.fn(),
   };
@@ -152,20 +153,58 @@ describe('RepositoriesController', () => {
   });
 
   describe('GET /orgs/:orgId/repos/:repoId/setup-status', () => {
-    it('should return setup status', async () => {
-      repoService.getSetupStatus.mockResolvedValue({ workflowFileExists: true });
+    it('should return setup status with secrets info', async () => {
+      repoService.getSetupStatus.mockResolvedValue({
+        workflowFileExists: true,
+        secretsConfigured: true,
+        hasAnthropicKey: true,
+        hasOAuthToken: false,
+      });
 
       const response = await request(app.getHttpServer())
         .get('/orgs/10/repos/1/setup-status')
         .expect(200);
 
       expect(response.body.data.workflowFileExists).toBe(true);
+      expect(response.body.data.secretsConfigured).toBe(true);
+      expect(response.body.data.hasAnthropicKey).toBe(true);
+      expect(response.body.data.hasOAuthToken).toBe(false);
     });
 
     it('should return 404 for non-existent repo', async () => {
       repoService.getSetupStatus.mockRejectedValue(new NotFoundException('Repository not found'));
 
       await request(app.getHttpServer()).get('/orgs/10/repos/999/setup-status').expect(404);
+    });
+  });
+
+  describe('POST /orgs/:orgId/repos/:repoId/setup-workflow', () => {
+    it('should create PR and return 201 with PR URL', async () => {
+      repoService.setupWorkflowPR.mockResolvedValue({
+        pullRequestUrl: 'https://github.com/test-owner/test-repo/pull/1',
+      });
+
+      const response = await request(app.getHttpServer())
+        .post('/orgs/10/repos/1/setup-workflow')
+        .expect(201);
+
+      expect(response.body.data.pullRequestUrl).toBe(
+        'https://github.com/test-owner/test-repo/pull/1',
+      );
+    });
+
+    it('should return 404 for non-existent repo', async () => {
+      repoService.setupWorkflowPR.mockRejectedValue(new NotFoundException('Repository not found'));
+
+      await request(app.getHttpServer()).post('/orgs/10/repos/999/setup-workflow').expect(404);
+    });
+
+    it('should return 400 if workflow file already exists', async () => {
+      repoService.setupWorkflowPR.mockRejectedValue(
+        new BadRequestException('Workflow file already exists in this repository'),
+      );
+
+      await request(app.getHttpServer()).post('/orgs/10/repos/1/setup-workflow').expect(400);
     });
   });
 

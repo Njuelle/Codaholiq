@@ -284,6 +284,178 @@ describe('GitHubApiService', () => {
     });
   });
 
+  describe('getBranchRef', () => {
+    it('should return ref and sha for a branch', async () => {
+      const mockOctokit = {
+        rest: {
+          git: {
+            getRef: vi.fn().mockResolvedValue({
+              data: { ref: 'refs/heads/main', object: { sha: 'abc123' } },
+            }),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      const result = await service.getBranchRef({
+        installationId: 1001,
+        owner: 'owner',
+        repo: 'repo',
+        branch: 'main',
+      });
+
+      expect(result).toEqual({ ref: 'refs/heads/main', sha: 'abc123' });
+      expect(mockOctokit.rest.git.getRef).toHaveBeenCalledWith({
+        owner: 'owner',
+        repo: 'repo',
+        ref: 'heads/main',
+      });
+    });
+  });
+
+  describe('createBranchRef', () => {
+    it('should create a branch and return ref', async () => {
+      const mockOctokit = {
+        rest: {
+          git: {
+            createRef: vi.fn().mockResolvedValue({
+              data: { ref: 'refs/heads/codaholiq/add-workflow', object: { sha: 'abc123' } },
+            }),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      const result = await service.createBranchRef({
+        installationId: 1001,
+        owner: 'owner',
+        repo: 'repo',
+        branch: 'codaholiq/add-workflow',
+        sha: 'abc123',
+      });
+
+      expect(result).toEqual({ ref: 'refs/heads/codaholiq/add-workflow', sha: 'abc123' });
+      expect(mockOctokit.rest.git.createRef).toHaveBeenCalledWith({
+        owner: 'owner',
+        repo: 'repo',
+        ref: 'refs/heads/codaholiq/add-workflow',
+        sha: 'abc123',
+      });
+    });
+  });
+
+  describe('deleteBranchRef', () => {
+    it('should delete a branch ref', async () => {
+      const mockOctokit = {
+        rest: {
+          git: {
+            deleteRef: vi.fn().mockResolvedValue({}),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      await service.deleteBranchRef({
+        installationId: 1001,
+        owner: 'owner',
+        repo: 'repo',
+        branch: 'codaholiq/add-workflow',
+      });
+
+      expect(mockOctokit.rest.git.deleteRef).toHaveBeenCalledWith({
+        owner: 'owner',
+        repo: 'repo',
+        ref: 'heads/codaholiq/add-workflow',
+      });
+    });
+  });
+
+  describe('createOrUpdateFileContents', () => {
+    it('should commit a file with base64-encoded content', async () => {
+      const mockOctokit = {
+        rest: {
+          repos: {
+            createOrUpdateFileContents: vi.fn().mockResolvedValue({
+              data: {
+                commit: {
+                  sha: 'commit-sha-456',
+                  html_url: 'https://github.com/owner/repo/commit/commit-sha-456',
+                },
+              },
+            }),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      const result = await service.createOrUpdateFileContents({
+        installationId: 1001,
+        owner: 'owner',
+        repo: 'repo',
+        path: '.github/workflows/codaholiq.yml',
+        message: 'Add workflow',
+        content: 'name: Codaholiq',
+        branch: 'codaholiq/add-workflow',
+      });
+
+      expect(result).toEqual({
+        sha: 'commit-sha-456',
+        htmlUrl: 'https://github.com/owner/repo/commit/commit-sha-456',
+      });
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith({
+        owner: 'owner',
+        repo: 'repo',
+        path: '.github/workflows/codaholiq.yml',
+        message: 'Add workflow',
+        content: Buffer.from('name: Codaholiq').toString('base64'),
+        branch: 'codaholiq/add-workflow',
+      });
+    });
+  });
+
+  describe('createPullRequest', () => {
+    it('should create a pull request and return details', async () => {
+      const mockOctokit = {
+        rest: {
+          pulls: {
+            create: vi.fn().mockResolvedValue({
+              data: {
+                number: 42,
+                html_url: 'https://github.com/owner/repo/pull/42',
+                title: 'Add Codaholiq workflow',
+              },
+            }),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      const result = await service.createPullRequest({
+        installationId: 1001,
+        owner: 'owner',
+        repo: 'repo',
+        title: 'Add Codaholiq workflow',
+        body: 'PR body',
+        head: 'codaholiq/add-workflow',
+        base: 'main',
+      });
+
+      expect(result).toEqual({
+        number: 42,
+        htmlUrl: 'https://github.com/owner/repo/pull/42',
+        title: 'Add Codaholiq workflow',
+      });
+      expect(mockOctokit.rest.pulls.create).toHaveBeenCalledWith({
+        owner: 'owner',
+        repo: 'repo',
+        title: 'Add Codaholiq workflow',
+        body: 'PR body',
+        head: 'codaholiq/add-workflow',
+        base: 'main',
+      });
+    });
+  });
+
   describe('checkFileExists', () => {
     it('should return true when file exists', async () => {
       const mockOctokit = {
@@ -401,6 +573,82 @@ describe('GitHubApiService', () => {
         created: '>=2025-01-01T00:00:00Z',
         per_page: 10,
       });
+    });
+  });
+
+  describe('listRepositorySecrets', () => {
+    it('should return secret names', async () => {
+      const mockOctokit = {
+        rest: {
+          actions: {
+            listRepoSecrets: vi.fn().mockResolvedValue({
+              data: {
+                total_count: 2,
+                secrets: [
+                  { name: 'ANTHROPIC_API_KEY', created_at: '', updated_at: '' },
+                  { name: 'DEPLOY_TOKEN', created_at: '', updated_at: '' },
+                ],
+              },
+            }),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      const result = await service.listRepositorySecrets({
+        installationId: 1001,
+        owner: 'owner',
+        repo: 'repo',
+      });
+
+      expect(result).toEqual(['ANTHROPIC_API_KEY', 'DEPLOY_TOKEN']);
+      expect(mockOctokit.rest.actions.listRepoSecrets).toHaveBeenCalledWith({
+        owner: 'owner',
+        repo: 'repo',
+        per_page: 100,
+      });
+    });
+
+    it('should return empty array on 403 (no secrets:read permission)', async () => {
+      const error = new Error('Forbidden') as Error & { status: number };
+      error.status = 403;
+      const mockOctokit = {
+        rest: {
+          actions: {
+            listRepoSecrets: vi.fn().mockRejectedValue(error),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      const result = await service.listRepositorySecrets({
+        installationId: 1001,
+        owner: 'owner',
+        repo: 'repo',
+      });
+
+      expect(result).toEqual([]);
+    });
+
+    it('should rethrow non-403 errors', async () => {
+      const error = new Error('Server Error') as Error & { status: number };
+      error.status = 500;
+      const mockOctokit = {
+        rest: {
+          actions: {
+            listRepoSecrets: vi.fn().mockRejectedValue(error),
+          },
+        },
+      };
+      vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
+
+      await expect(
+        service.listRepositorySecrets({
+          installationId: 1001,
+          owner: 'owner',
+          repo: 'repo',
+        }),
+      ).rejects.toThrow('Server Error');
     });
   });
 

@@ -155,7 +155,7 @@ export const defaultHandlers = [
     return HttpResponse.json({
       data: {
         template:
-          'name: Claude Code Automation\non:\n  workflow_dispatch:\n    inputs:\n      prompt:\n        required: true\n        type: string\n',
+          'name: Codaholiq\n\non:\n  workflow_dispatch:\n    inputs:\n      prompt:\n        description: The prompt to send to Claude Code\n        required: true\n        type: string\n\njobs:\n  execute:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: anthropics/claude-code-action@v1\n        with:\n          prompt: ${{ github.event.inputs.prompt }}\n          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}\n',
       },
       requestId: 'test-request-id',
     });
@@ -305,9 +305,24 @@ export const defaultHandlers = [
     });
   }),
 
+  http.post('/api/orgs/:orgId/repos/:repoId/setup-workflow', () => {
+    return HttpResponse.json(
+      {
+        data: { pullRequestUrl: 'https://github.com/test-org/repo-1/pull/1' },
+        requestId: 'test-request-id',
+      },
+      { status: 201 },
+    );
+  }),
+
   http.get('/api/orgs/:orgId/repos/:repoId/setup-status', () => {
     return HttpResponse.json({
-      data: { workflowFileExists: true },
+      data: {
+        workflowFileExists: true,
+        secretsConfigured: true,
+        hasAnthropicKey: true,
+        hasOAuthToken: false,
+      },
       requestId: 'test-request-id',
     });
   }),
