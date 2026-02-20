@@ -7,6 +7,11 @@ function createMockConfig(overrides: Record<string, string> = {}) {
     JWT_REFRESH_SECRET: 'KLMNOPQRST9876543210klmnopqrst01',
     DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
     REDIS_URL: 'redis://localhost:6379',
+    GITHUB_CLIENT_ID: 'test-client-id',
+    GITHUB_CLIENT_SECRET: 'test-client-secret',
+    GITHUB_APP_ID: '12345',
+    GITHUB_APP_PRIVATE_KEY: 'test-private-key',
+    GITHUB_WEBHOOK_SECRET: 'test-webhook-secret',
   };
   const values = { ...defaults, ...overrides };
   return {
@@ -110,14 +115,25 @@ describe('EnvValidationService', () => {
     );
   });
 
-  it('should warn but not throw when REDIS_URL is missing', () => {
+  it('should throw when REDIS_URL is missing', () => {
     const config = createMockConfig();
-    config.get.mockImplementation(((key: string) => {
-      if (key === 'REDIS_URL') return undefined;
-      return createMockConfig().get(key);
+    config.getOrThrow.mockImplementation(((key: string) => {
+      if (key === 'REDIS_URL') throw new Error('Missing REDIS_URL');
+      return createMockConfig().getOrThrow(key);
     }) as (key: string) => string);
     const service = new EnvValidationService(config as unknown as ConfigService);
 
-    expect(() => service.onModuleInit()).not.toThrow();
+    expect(() => service.onModuleInit()).toThrow('Missing REDIS_URL');
+  });
+
+  it('should throw when a GitHub env var is missing', () => {
+    const config = createMockConfig();
+    config.getOrThrow.mockImplementation(((key: string) => {
+      if (key === 'GITHUB_CLIENT_ID') throw new Error('Missing GITHUB_CLIENT_ID');
+      return createMockConfig().getOrThrow(key);
+    }) as (key: string) => string);
+    const service = new EnvValidationService(config as unknown as ConfigService);
+
+    expect(() => service.onModuleInit()).toThrow('Missing GITHUB_CLIENT_ID');
   });
 });

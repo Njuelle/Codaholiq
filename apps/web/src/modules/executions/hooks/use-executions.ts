@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/common/lib/api-client';
+import { buildQueryParams } from '@/common/lib/query-params';
 import { TERMINAL_STATUSES } from '@/modules/executions/lib/execution-utils';
 import { queryKeys } from '@/common/lib/query-keys';
 import type { ExecutionStatus, ExecutionWithAutomation, PaginatedResponse } from '@/common/types';
@@ -26,12 +27,7 @@ interface UseExecutionsReturn {
 }
 
 export function useExecutions({ orgId, filters }: UseExecutionsParams): UseExecutionsReturn {
-  const queryParams: Record<string, unknown> = {};
-  if (filters?.status) queryParams.status = filters.status;
-  if (filters?.automationId) queryParams.automationId = filters.automationId;
-  if (filters?.repoId) queryParams.repoId = filters.repoId;
-  if (filters?.limit) queryParams.limit = filters.limit;
-  if (filters?.offset !== undefined) queryParams.offset = filters.offset;
+  const queryParams = buildQueryParams(filters);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: [...queryKeys.executions.all(orgId), queryParams],

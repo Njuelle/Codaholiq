@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/common/lib/api-client';
+import { buildQueryParams } from '@/common/lib/query-params';
 import { queryKeys } from '@/common/lib/query-keys';
 import type { PaginatedResponse, Repository } from '@/common/types';
 
@@ -25,12 +26,7 @@ interface UseRepositoriesReturn {
 }
 
 export function useRepositories({ orgId, filters }: UseRepositoriesParams): UseRepositoriesReturn {
-  const queryParams: Record<string, unknown> = {};
-  if (filters?.search) queryParams.search = filters.search;
-  if (filters?.language) queryParams.language = filters.language;
-  if (filters?.archived !== undefined) queryParams.archived = String(filters.archived);
-  if (filters?.limit) queryParams.limit = filters.limit;
-  if (filters?.offset !== undefined) queryParams.offset = filters.offset;
+  const queryParams = buildQueryParams(filters);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: [...queryKeys.repos.all(orgId), queryParams],

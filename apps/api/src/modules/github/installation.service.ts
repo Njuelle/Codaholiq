@@ -62,38 +62,20 @@ export class InstallationService {
     });
 
     if (data.repositories && data.repositories.length > 0) {
-      for (const repo of data.repositories) {
-        const [owner, name] = repo.full_name.split('/');
-        await this.githubRepo.upsertRepository({
-          githubId: repo.id,
-          installationId: dbInstallation.id,
-          orgId: org.id,
-          owner,
-          name,
-          fullName: repo.full_name,
-          defaultBranch: DEFAULT_BRANCH_PLACEHOLDER,
-          isPrivate: repo.private,
-          language: null,
-          archived: false,
-        });
-      }
-      this.logger.log(`Synced ${data.repositories.length} repos from installation payload`);
-    } else {
-      await this.repoSyncService.syncAllForInstallation({
-        installationId: installation.id,
+      await this.upsertRepositoriesFromPayload({
+        repos: data.repositories,
+        installationId: dbInstallation.id,
         orgId: org.id,
-        dbInstallationId: dbInstallation.id,
       });
     }
 
-    // Trigger a full sync to fill in accurate metadata (default_branch, language, etc.)
-    if (data.repositories && data.repositories.length > 0) {
-      await this.repoSyncService.syncAllForInstallation({
-        installationId: installation.id,
-        orgId: org.id,
-        dbInstallationId: dbInstallation.id,
-      });
-    }
+    // Full sync fills in accurate metadata (default_branch, language, etc.)
+    // and catches any repos not included in the webhook payload.
+    await this.repoSyncService.syncAllForInstallation({
+      installationId: installation.id,
+      orgId: org.id,
+      dbInstallationId: dbInstallation.id,
+    });
   }
 
   async handleInstallationDeleted({
@@ -169,21 +151,11 @@ export class InstallationService {
     }
 
     const addedRepos = data.repositories_added ?? [];
-    for (const repo of addedRepos) {
-      const [owner, name] = repo.full_name.split('/');
-      await this.githubRepo.upsertRepository({
-        githubId: repo.id,
-        installationId: dbInstallation.id,
-        orgId: dbInstallation.orgId,
-        owner,
-        name,
-        fullName: repo.full_name,
-        defaultBranch: DEFAULT_BRANCH_PLACEHOLDER,
-        isPrivate: repo.private,
-        language: null,
-        archived: false,
-      });
-    }
+    await this.upsertRepositoriesFromPayload({
+      repos: addedRepos,
+      installationId: dbInstallation.id,
+      orgId: dbInstallation.orgId,
+    });
 
     this.logger.log(`Added ${addedRepos.length} repos to installation ${installation.id}`);
   }
@@ -224,5 +196,31 @@ export class InstallationService {
     this.logger.log(
       `Removed ${removedRepos.length} repos, disabled automations for ${repoIds.length} repos`,
     );
+  }
+
+  private async upsertRepositoriesFromPayload({
+    repos,
+    installationId,
+    orgId,
+  }: {
+    repos: readonly { id: number; full_name: string; private: boolean }[];
+    installationId: number;
+    orgId: number;
+  }): Promise<void> {
+    for (const repo of repos) {
+      const [owner, name] = repo.full_name.split('/');
+      await this.githubRepo.upsertRepository({
+        githubId: repo.id,
+        installationId,
+        orgId,
+        owner,
+        name,
+        fullName: repo.full_name,
+        defaultBranch: DEFAULT_BRANCH_PLACEHOLDER,
+        isPrivate: repo.private,
+        language: null,
+        archived: false,
+      });
+    }
   }
 }

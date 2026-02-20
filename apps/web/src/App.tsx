@@ -9,6 +9,7 @@ import { OrgProvider } from '@/modules/organizations/hooks/use-org';
 import { ProtectedRoute } from '@/common/components/protected-route';
 import { OrgRoute } from '@/common/components/org-route';
 import { ErrorBoundary } from '@/common/components/error-boundary';
+import { RouteErrorBoundary } from '@/common/components/route-error-boundary';
 import { PageSuspense } from '@/common/components/page-suspense';
 import { NotFoundPage } from '@/common/pages/not-found';
 import { ForbiddenPage } from '@/common/pages/forbidden';
@@ -138,89 +139,111 @@ const router = createBrowserRouter([
               {
                 path: 'dashboard',
                 element: (
-                  <PageSuspense>
-                    <DashboardPage />
-                  </PageSuspense>
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <DashboardPage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
                 ),
               },
               {
                 path: 'repos',
                 element: (
-                  <PageSuspense>
-                    <RepositoryListPage />
-                  </PageSuspense>
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <RepositoryListPage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
                 ),
               },
               {
                 path: 'repos/:repoId',
                 element: (
-                  <PageSuspense>
-                    <RepositoryDetailPage />
-                  </PageSuspense>
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <RepositoryDetailPage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
                 ),
               },
               {
                 path: 'automations',
                 element: (
-                  <PageSuspense>
-                    <AutomationsListPage />
-                  </PageSuspense>
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <AutomationsListPage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
                 ),
               },
               {
                 path: 'automations/new',
                 element: (
-                  <PageSuspense>
-                    <AutomationNewPage />
-                  </PageSuspense>
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <AutomationNewPage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
                 ),
               },
               {
                 path: 'automations/new/custom',
                 element: (
-                  <PageSuspense>
-                    <AutomationCreatePage />
-                  </PageSuspense>
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <AutomationCreatePage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
                 ),
               },
               {
                 path: 'automations/:automationId/edit',
                 element: (
-                  <PageSuspense>
-                    <AutomationEditPage />
-                  </PageSuspense>
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <AutomationEditPage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
                 ),
               },
               {
                 path: 'automations/:automationId',
                 element: (
-                  <PageSuspense>
-                    <AutomationDetailPage />
-                  </PageSuspense>
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <AutomationDetailPage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
                 ),
               },
               {
                 path: 'executions',
                 element: (
-                  <PageSuspense>
-                    <ExecutionsListPage />
-                  </PageSuspense>
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <ExecutionsListPage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
                 ),
               },
               {
                 path: 'executions/:executionId',
                 element: (
-                  <PageSuspense>
-                    <ExecutionDetailPage />
-                  </PageSuspense>
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <ExecutionDetailPage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
                 ),
               },
               {
                 path: 'settings',
                 element: (
-                  <PageSuspense>
-                    <OrgSettingsPage />
-                  </PageSuspense>
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <OrgSettingsPage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
                 ),
               },
             ],

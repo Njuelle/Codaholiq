@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/common/lib/api-client';
+import { buildQueryParams } from '@/common/lib/query-params';
 import { queryKeys } from '@/common/lib/query-keys';
 import type { Automation, AutomationListFilters } from '@/common/types';
 
@@ -16,12 +17,7 @@ interface UseAutomationsReturn {
 }
 
 export function useAutomations({ orgId, filters }: UseAutomationsParams): UseAutomationsReturn {
-  const queryParams: Record<string, unknown> = {};
-  if (filters?.triggerType) queryParams.triggerType = filters.triggerType;
-  if (filters?.enabled !== undefined) queryParams.enabled = String(filters.enabled);
-  if (filters?.repoId) queryParams.repoId = filters.repoId;
-  if (filters?.limit) queryParams.limit = filters.limit;
-  if (filters?.offset) queryParams.offset = filters.offset;
+  const queryParams = buildQueryParams(filters);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: [...queryKeys.automations.all(orgId), queryParams],

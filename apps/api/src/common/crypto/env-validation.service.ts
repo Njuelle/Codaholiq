@@ -11,6 +11,7 @@ export class EnvValidationService implements OnModuleInit {
     this.validateJwtSecrets();
     this.validateDatabaseUrl();
     this.validateRedisUrl();
+    this.validateGitHubConfig();
   }
 
   private validateJwtSecrets(): void {
@@ -54,11 +55,7 @@ export class EnvValidationService implements OnModuleInit {
   }
 
   private validateRedisUrl(): void {
-    const url = this.config.get<string>('REDIS_URL');
-    if (!url) {
-      this.logger.warn('REDIS_URL not set — BullMQ job processing will fail at runtime');
-      return;
-    }
+    const url = this.config.getOrThrow<string>('REDIS_URL');
 
     if (!url.startsWith('redis://') && !url.startsWith('rediss://')) {
       throw new Error(
@@ -67,5 +64,15 @@ export class EnvValidationService implements OnModuleInit {
     }
 
     this.logger.log('Redis URL validated');
+  }
+
+  private validateGitHubConfig(): void {
+    this.config.getOrThrow<string>('GITHUB_CLIENT_ID');
+    this.config.getOrThrow<string>('GITHUB_CLIENT_SECRET');
+    this.config.getOrThrow<string>('GITHUB_APP_ID');
+    this.config.getOrThrow<string>('GITHUB_APP_PRIVATE_KEY');
+    this.config.getOrThrow<string>('GITHUB_WEBHOOK_SECRET');
+
+    this.logger.log('GitHub config validated');
   }
 }

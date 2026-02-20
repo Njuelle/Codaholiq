@@ -105,7 +105,8 @@ export class DashboardService {
   private computeUpcomingCrons(
     automations: { id: number; name: string; triggerConfig: unknown }[],
   ): UpcomingCronTrigger[] {
-    const triggers: UpcomingCronTrigger[] = [];
+    const TOP_K = 5;
+    const top: UpcomingCronTrigger[] = [];
 
     for (const automation of automations) {
       const config = automation.triggerConfig as {
@@ -121,12 +122,18 @@ export class DashboardService {
           currentDate: new Date(),
         });
         const next = interval.next();
+        const nextFireAt = next.toDate().toISOString();
 
-        triggers.push({
-          automationId: automation.id,
-          automationName: automation.name,
-          nextFireAt: next.toDate().toISOString(),
-        });
+        const lastEntry = top[top.length - 1];
+        if (top.length < TOP_K || (lastEntry && nextFireAt < lastEntry.nextFireAt)) {
+          top.push({
+            automationId: automation.id,
+            automationName: automation.name,
+            nextFireAt,
+          });
+          top.sort((a, b) => a.nextFireAt.localeCompare(b.nextFireAt));
+          if (top.length > TOP_K) top.pop();
+        }
       } catch (error) {
         this.logger.warn(
           `Invalid cron expression for automation ${automation.id}: ${config.schedule}`,
@@ -135,8 +142,6 @@ export class DashboardService {
       }
     }
 
-    triggers.sort((a, b) => new Date(a.nextFireAt).getTime() - new Date(b.nextFireAt).getTime());
-
-    return triggers.slice(0, 5);
+    return top;
   }
 }

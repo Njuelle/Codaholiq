@@ -1,0 +1,1 @@
+ALTER TABLE "org_role_permissions" ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;

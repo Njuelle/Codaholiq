@@ -1,4 +1,11 @@
-import { Injectable, Inject, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  ForbiddenException,
+  BadRequestException,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { PermissionsRepository } from './permissions.repository';
 import { Permission, ALL_PERMISSIONS, DEFAULT_ROLE_PERMISSIONS } from './permissions.constants';
 
@@ -9,15 +16,30 @@ interface CacheEntry {
 
 const CACHE_TTL_MS = 60_000;
 const CACHE_MAX_SIZE = 10_000;
+const CACHE_CLEANUP_INTERVAL_MS = 5 * 60_000;
 
 @Injectable()
-export class PermissionsService {
+export class PermissionsService implements OnModuleInit, OnModuleDestroy {
   private readonly cache = new Map<string, CacheEntry>();
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     @Inject(PermissionsRepository)
     private readonly permissionsRepository: PermissionsRepository,
   ) {}
+
+  onModuleInit(): void {
+    this.cleanupTimer = setInterval(() => {
+      this.evictExpiredEntries();
+    }, CACHE_CLEANUP_INTERVAL_MS);
+  }
+
+  onModuleDestroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+  }
 
   async resolvePermissions({
     orgId,

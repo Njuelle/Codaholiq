@@ -8,6 +8,13 @@
       "when": 1771178664810,
       "tag": "0000_plain_drax",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771516297902,
+      "tag": "0001_bouncy_vance_astro",
+      "breakpoints": true
     }
   ]
 }

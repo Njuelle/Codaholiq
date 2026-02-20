@@ -237,29 +237,29 @@ export class AutomationRepository {
       required?: boolean;
     }[];
   }): Promise<(typeof automationVariables.$inferSelect)[]> {
-    const results: (typeof automationVariables.$inferSelect)[] = [];
-
-    for (const variable of variables) {
-      const [result] = await this.db
-        .insert(automationVariables)
-        .values({
-          automationId,
-          key: variable.key,
-          value: variable.value,
-          source: variable.source,
-          required: variable.required ?? false,
-        })
-        .onConflictDoUpdate({
-          target: [automationVariables.automationId, automationVariables.key],
-          set: {
+    const results = await Promise.all(
+      variables.map((variable) =>
+        this.db
+          .insert(automationVariables)
+          .values({
+            automationId,
+            key: variable.key,
             value: variable.value,
             source: variable.source,
             required: variable.required ?? false,
-          },
-        })
-        .returning();
-      results.push(result);
-    }
+          })
+          .onConflictDoUpdate({
+            target: [automationVariables.automationId, automationVariables.key],
+            set: {
+              value: variable.value,
+              source: variable.source,
+              required: variable.required ?? false,
+            },
+          })
+          .returning()
+          .then(([result]) => result),
+      ),
+    );
 
     return results;
   }

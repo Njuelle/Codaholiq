@@ -1,6 +1,5 @@
-import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { apiDelete } from '@/common/lib/api-client';
+import type { UseMutationResult } from '@tanstack/react-query';
+import { useDeleteMutation } from '@/common/hooks/use-delete-mutation';
 import { queryKeys } from '@/common/lib/query-keys';
 
 interface UseDeleteSharedVariableParams {
@@ -10,18 +9,10 @@ interface UseDeleteSharedVariableParams {
 export function useDeleteSharedVariable({
   orgId,
 }: UseDeleteSharedVariableParams): UseMutationResult<void, Error, number> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (variableId: number) => apiDelete(`/orgs/${orgId}/variables/${variableId}`),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.variables.all(orgId),
-      });
-      toast.success('Variable deleted');
-    },
-    onError: (err) => {
-      toast.error(err.message || 'Failed to delete variable');
-    },
+  return useDeleteMutation({
+    buildUrl: (variableId) => `/orgs/${orgId}/variables/${variableId}`,
+    queryKey: queryKeys.variables.all(orgId),
+    successMessage: 'Variable deleted',
+    errorMessage: 'Failed to delete variable',
   });
 }
