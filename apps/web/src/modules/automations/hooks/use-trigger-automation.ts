@@ -9,25 +9,17 @@ interface UseTriggerAutomationParams {
   readonly automationId: number;
 }
 
-interface TriggerParams {
-  readonly variables?: Record<string, string>;
-}
-
 export function useTriggerAutomation({
   orgId,
   automationId,
-}: UseTriggerAutomationParams): UseMutationResult<
-  ManualTriggerResponse,
-  Error,
-  TriggerParams | void
-> {
+}: UseTriggerAutomationParams): UseMutationResult<ManualTriggerResponse, Error, void> {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (params: TriggerParams | void) =>
+    mutationFn: () =>
       apiPost<ManualTriggerResponse>(
         `/orgs/${orgId}/automations/${automationId}/trigger`,
-        params ?? {},
+        {},
       ),
     onSuccess: () => {
       void queryClient.invalidateQueries({

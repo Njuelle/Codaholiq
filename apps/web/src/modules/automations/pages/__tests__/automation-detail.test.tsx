@@ -184,7 +184,6 @@ describe('AutomationDetailPage', () => {
     // Detail cards should be rendered
     expect(screen.getByText('Details')).toBeInTheDocument();
     expect(screen.getByText('Prompt Template')).toBeInTheDocument();
-    expect(screen.getByText('Variables')).toBeInTheDocument();
     expect(screen.getByText('Recent Executions')).toBeInTheDocument();
   });
 

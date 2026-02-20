@@ -30,7 +30,7 @@ describe('useTriggerAutomation', () => {
       wrapper: createWrapper(),
     });
 
-    result.current.mutate({ variables: { branch: 'main' } });
+    result.current.mutate();
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);

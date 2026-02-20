@@ -3,7 +3,7 @@ import { DeleteAutomationDialog } from '@/modules/automations/components/delete-
 import { PromptTemplateCard } from '@/modules/automations/components/prompt-template-card';
 import { RecentExecutionsCard } from '@/modules/automations/components/recent-executions-card';
 import { TriggerAutomationDialog } from '@/modules/automations/components/trigger-automation-dialog';
-import { VariablesCard } from '@/modules/automations/components/variables-card';
+
 import { ConfirmDialog } from '@/common/components/confirm-dialog';
 import { PageHeader } from '@/common/components/page-header';
 import { Button } from '@/common/components/ui/button';
@@ -36,7 +36,6 @@ function LoadingSkeleton(): ReactElement {
       <div className="grid gap-6 lg:grid-cols-2">
         <Skeleton className="h-72" />
         <Skeleton className="h-72" />
-        <Skeleton className="h-48" />
         <Skeleton className="h-48" />
       </div>
     </div>
@@ -115,8 +114,8 @@ export function AutomationDetailPage(): ReactElement {
     deleteMutation.mutate(automationId);
   };
 
-  const handleTrigger = (variables?: Record<string, string>): void => {
-    triggerMutation.mutate(variables ? { variables } : undefined);
+  const handleTrigger = (): void => {
+    triggerMutation.mutate(undefined);
   };
 
   return (
@@ -173,7 +172,6 @@ export function AutomationDetailPage(): ReactElement {
       <div className="grid gap-6 lg:grid-cols-2">
         <AutomationInfoCard automation={automation} />
         <PromptTemplateCard promptTemplate={automation.promptTemplate} />
-        <VariablesCard variables={automation.variables} />
         <RecentExecutionsCard orgId={orgId} automationId={automationId} />
       </div>
 
@@ -188,7 +186,8 @@ export function AutomationDetailPage(): ReactElement {
       <TriggerAutomationDialog
         open={isTriggerDialogOpen}
         onOpenChange={setIsTriggerDialogOpen}
-        automation={automation}
+        automationName={automation.name}
+        automationOrgId={automation.orgId}
         onTrigger={handleTrigger}
         isPending={triggerMutation.isPending}
         result={triggerMutation.data}
