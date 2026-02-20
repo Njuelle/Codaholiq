@@ -1,11 +1,4 @@
-import {
-  GitBranch,
-  MessageCircle,
-  Package,
-  Play,
-  Tag,
-  User,
-} from 'lucide-react';
+import { GitBranch, MessageCircle, Package, Play, Tag, User } from 'lucide-react';
 import type { TriggerCondition } from '@/common/types';
 import type { ReactElement } from 'react';
 
