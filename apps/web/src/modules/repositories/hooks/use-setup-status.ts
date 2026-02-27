@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/common/lib/api-client';
 import { queryKeys } from '@/common/lib/query-keys';
+import type { ProviderSecretStatus } from '@/modules/automations/types';
 
 interface UseSetupStatusParams {
   readonly orgId: number;
@@ -12,6 +13,7 @@ interface SetupStatusResponse {
   readonly secretsConfigured: boolean;
   readonly hasAnthropicKey: boolean;
   readonly hasOAuthToken: boolean;
+  readonly providerSecrets: readonly ProviderSecretStatus[];
 }
 
 interface UseSetupStatusReturn {
@@ -19,6 +21,7 @@ interface UseSetupStatusReturn {
   readonly secretsConfigured: boolean | undefined;
   readonly hasAnthropicKey: boolean | undefined;
   readonly hasOAuthToken: boolean | undefined;
+  readonly providerSecrets: readonly ProviderSecretStatus[] | undefined;
   readonly isLoading: boolean;
   readonly isError: boolean;
   readonly error: Error | null;
@@ -37,6 +40,7 @@ export function useSetupStatus({ orgId, repoId }: UseSetupStatusParams): UseSetu
     secretsConfigured: data?.secretsConfigured,
     hasAnthropicKey: data?.hasAnthropicKey,
     hasOAuthToken: data?.hasOAuthToken,
+    providerSecrets: data?.providerSecrets,
     isLoading,
     isError,
     error,

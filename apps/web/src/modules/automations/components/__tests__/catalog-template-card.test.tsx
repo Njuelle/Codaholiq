@@ -13,6 +13,7 @@ const mockTemplate: CatalogTemplate = {
   triggerType: 'event',
   triggerConfig: { events: ['pull_request.opened'] },
   promptTemplate: 'Review the PR.',
+  provider: 'claude-code',
   model: null,
   variables: [],
 };

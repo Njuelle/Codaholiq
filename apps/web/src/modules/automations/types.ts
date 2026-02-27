@@ -20,6 +20,7 @@ export interface Automation {
   readonly triggerType: TriggerType;
   readonly triggerConfig: EventTriggerConfig | CronTriggerConfig | ManualTriggerConfig;
   readonly promptTemplate: string;
+  readonly provider: string;
   readonly model: string | null;
   readonly workflowFile: string;
   readonly enabled: boolean;
@@ -32,6 +33,39 @@ export interface ClaudeModel {
   readonly id: string;
   readonly name: string;
   readonly description: string;
+}
+
+export interface ProviderModel {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+}
+
+export interface SecretRequirement {
+  readonly name: string;
+  readonly required: boolean;
+  readonly description: string;
+}
+
+export interface ProviderDefinition {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly models: readonly ProviderModel[];
+  readonly defaultModelId: string;
+  readonly secrets: readonly SecretRequirement[];
+}
+
+export interface ProviderListResponse {
+  readonly providers: readonly ProviderDefinition[];
+  readonly defaultProviderId: string;
+}
+
+export interface ProviderSecretStatus {
+  readonly providerId: string;
+  readonly providerName: string;
+  readonly configured: boolean;
+  readonly secrets: readonly { readonly name: string; readonly exists: boolean }[];
 }
 
 export interface AutomationWithVariables extends Automation {
@@ -112,6 +146,7 @@ export interface CatalogTemplate {
   readonly triggerType: TriggerType;
   readonly triggerConfig: EventTriggerConfig | CronTriggerConfig | ManualTriggerConfig;
   readonly promptTemplate: string;
+  readonly provider: string;
   readonly model: string | null;
   readonly variables: readonly CatalogVariable[];
 }

@@ -15,6 +15,7 @@ export interface Execution {
   readonly status: ExecutionStatus;
   readonly triggerEvent: unknown;
   readonly resolvedPrompt: string;
+  readonly provider: string | null;
   readonly githubRunId: number | null;
   readonly githubRunUrl: string | null;
   readonly errorMessage: string | null;

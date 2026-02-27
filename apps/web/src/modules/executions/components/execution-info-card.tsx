@@ -2,6 +2,7 @@ import { StatusBadge } from '@/common/components/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { isValidGitHubUrl } from '@/modules/executions/lib/execution-utils';
 import { formatDate, formatDuration, computeDurationMs } from '@/common/lib/format';
+import { useProviders } from '@/modules/automations/hooks/use-providers';
 import type { Execution } from '@/common/types';
 import { ExternalLink } from 'lucide-react';
 import type { ReactElement } from 'react';
@@ -18,6 +19,7 @@ export function ExecutionInfoCard({
   automationName,
   orgId,
 }: ExecutionInfoCardProps): ReactElement {
+  const { getProviderName } = useProviders();
   const durationMs = computeDurationMs({
     startedAt: execution.startedAt,
     completedAt: execution.completedAt,
@@ -48,6 +50,12 @@ export function ExecutionInfoCard({
             >
               {automationName}
             </Link>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Provider</p>
+            <p className="text-sm font-medium">
+              {execution.provider ? getProviderName(execution.provider) : '-'}
+            </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Created</p>

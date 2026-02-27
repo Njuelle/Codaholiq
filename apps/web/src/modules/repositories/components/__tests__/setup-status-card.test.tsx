@@ -10,6 +10,9 @@ const defaultProps = {
   secretsConfigured: false as boolean | undefined,
   hasAnthropicKey: false as boolean | undefined,
   hasOAuthToken: false as boolean | undefined,
+  providerSecrets: undefined as
+    | readonly import('@/modules/automations/types').ProviderSecretStatus[]
+    | undefined,
   repoFullName: 'test-org/repo-1' as string | undefined,
   isLoading: false,
   isError: false,

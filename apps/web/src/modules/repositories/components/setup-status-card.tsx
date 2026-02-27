@@ -4,6 +4,7 @@ import { Skeleton } from '@/common/components/ui/skeleton';
 import { useClipboard } from '@/common/hooks/use-clipboard';
 import { useCreateWorkflowPR } from '@/modules/repositories/hooks/use-create-workflow-pr';
 import { useWorkflowTemplate } from '@/modules/executions/hooks/use-workflow-template';
+import type { ProviderSecretStatus } from '@/modules/automations/types';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -18,11 +19,113 @@ import type { ReactElement } from 'react';
 
 const GITHUB_URL_PREFIX = 'https://github.com/';
 
+interface SecretsStatusSectionProps {
+  readonly providerSecrets: readonly ProviderSecretStatus[] | undefined;
+  readonly secretsConfigured: boolean | undefined;
+  readonly hasAnthropicKey: boolean | undefined;
+  readonly hasOAuthToken: boolean | undefined;
+  readonly repoFullName: string | undefined;
+}
+
+function SecretsStatusSection({
+  providerSecrets,
+  secretsConfigured,
+  hasAnthropicKey,
+  hasOAuthToken,
+  repoFullName,
+}: SecretsStatusSectionProps): ReactElement | null {
+  if (providerSecrets && providerSecrets.length > 0) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <KeyRound className="h-5 w-5 text-muted-foreground" />
+          <span className="text-sm font-medium">Provider Secrets</span>
+        </div>
+        <div className="space-y-2">
+          {providerSecrets.map((ps) => (
+            <div key={ps.providerId} className="flex items-center justify-between text-sm">
+              <span>{ps.providerName}</span>
+              {ps.configured ? (
+                <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Ready
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <AlertTriangle className="h-4 w-4" />
+                  No secrets
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+        {repoFullName && (
+          <a
+            href={`https://github.com/${repoFullName}/settings/secrets/actions`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 underline dark:text-blue-400"
+          >
+            Manage secrets on GitHub
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </div>
+    );
+  }
+
+  if (secretsConfigured === undefined) {
+    return null;
+  }
+
+  if (secretsConfigured) {
+    return (
+      <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+        <KeyRound className="h-5 w-5" />
+        <span className="text-sm font-medium">
+          API key configured
+          {hasAnthropicKey && hasOAuthToken
+            ? ' (ANTHROPIC_API_KEY + CLAUDE_CODE_OAUTH_TOKEN)'
+            : hasAnthropicKey
+              ? ' (ANTHROPIC_API_KEY)'
+              : ' (CLAUDE_CODE_OAUTH_TOKEN)'}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+        <AlertTriangle className="h-5 w-5" />
+        <span className="text-sm font-medium">No API key found</span>
+      </div>
+      <p className="text-muted-foreground text-sm">
+        Set <code className="bg-muted rounded px-1 py-0.5">ANTHROPIC_API_KEY</code> or{' '}
+        <code className="bg-muted rounded px-1 py-0.5">CLAUDE_CODE_OAUTH_TOKEN</code> in your
+        repository&apos;s GitHub Actions secrets.
+      </p>
+      {repoFullName && (
+        <a
+          href={`https://github.com/${repoFullName}/settings/secrets/actions`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 underline dark:text-blue-400"
+        >
+          Manage secrets on GitHub
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      )}
+    </div>
+  );
+}
+
 interface SetupStatusCardProps {
   readonly workflowFileExists: boolean | undefined;
   readonly secretsConfigured: boolean | undefined;
   readonly hasAnthropicKey: boolean | undefined;
   readonly hasOAuthToken: boolean | undefined;
+  readonly providerSecrets: readonly ProviderSecretStatus[] | undefined;
   readonly repoFullName: string | undefined;
   readonly isLoading: boolean;
   readonly isError: boolean;
@@ -36,6 +139,7 @@ export function SetupStatusCard({
   secretsConfigured,
   hasAnthropicKey,
   hasOAuthToken,
+  providerSecrets,
   repoFullName,
   isLoading,
   isError,
@@ -158,47 +262,14 @@ export function SetupStatusCard({
           )}
         </div>
 
-        {/* Step 2: API secrets */}
-        {secretsConfigured !== undefined && (
-          <div>
-            {secretsConfigured ? (
-              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                <KeyRound className="h-5 w-5" />
-                <span className="text-sm font-medium">
-                  API key configured
-                  {hasAnthropicKey && hasOAuthToken
-                    ? ' (ANTHROPIC_API_KEY + CLAUDE_CODE_OAUTH_TOKEN)'
-                    : hasAnthropicKey
-                      ? ' (ANTHROPIC_API_KEY)'
-                      : ' (CLAUDE_CODE_OAUTH_TOKEN)'}
-                </span>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
-                  <AlertTriangle className="h-5 w-5" />
-                  <span className="text-sm font-medium">No API key found</span>
-                </div>
-                <p className="text-muted-foreground text-sm">
-                  Set <code className="bg-muted rounded px-1 py-0.5">ANTHROPIC_API_KEY</code> or{' '}
-                  <code className="bg-muted rounded px-1 py-0.5">CLAUDE_CODE_OAUTH_TOKEN</code> in
-                  your repository&apos;s GitHub Actions secrets.
-                </p>
-                {repoFullName && (
-                  <a
-                    href={`https://github.com/${repoFullName}/settings/secrets/actions`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 underline dark:text-blue-400"
-                  >
-                    Manage secrets on GitHub
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Step 2: Provider secrets */}
+        <SecretsStatusSection
+          providerSecrets={providerSecrets}
+          secretsConfigured={secretsConfigured}
+          hasAnthropicKey={hasAnthropicKey}
+          hasOAuthToken={hasOAuthToken}
+          repoFullName={repoFullName}
+        />
       </CardContent>
     </Card>
   );

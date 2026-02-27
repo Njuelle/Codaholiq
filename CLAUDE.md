@@ -118,9 +118,11 @@ npm test --workspace @codaholiq/api     # API tests only
 npm test --workspace @codaholiq/web     # Web tests only
 npx vitest run src/modules/auth/        # Single module tests (from apps/api/)
 
-# Linting & types
+# Linting, types & format
 npm run lint                   # ESLint across all workspaces
 npm run typecheck              # tsc --noEmit across all workspaces
+npm run format                 # format all files across all workspaces
+
 
 # Database (run from apps/api/)
 npm run db:generate            # Generate migration from schema changes
@@ -139,6 +141,7 @@ After making any code changes, **always** run typecheck and lint, and fix all er
 npm run typecheck              # Must pass with zero errors
 npm run lint                   # Must pass with zero errors — fix all warnings and errors, do not suppress them
 npm test                       # All tests must pass across both workspaces
+npm run format                 # format all files across all workspaces
 ```
 
 If any command reports errors, fix them immediately. Do not leave typecheck, lint, or test errors for the user to resolve. Iterate until all three commands pass cleanly.

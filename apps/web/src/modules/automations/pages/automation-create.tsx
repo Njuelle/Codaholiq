@@ -99,7 +99,11 @@ export function AutomationCreatePage(): ReactElement {
           </TabsContent>
 
           <TabsContent value="prompt" className="mt-6 flex-none">
-            <AutomationPromptStep control={form.control} watch={form.watch} />
+            <AutomationPromptStep
+              control={form.control}
+              watch={form.watch}
+              setValue={form.setValue}
+            />
           </TabsContent>
 
           <TabsContent value="review" className="mt-6 flex-none">

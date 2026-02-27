@@ -9,33 +9,28 @@ import {
   FormMessage,
 } from '@/common/components/ui/form';
 import { Label } from '@/common/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/common/components/ui/select';
+import { ProviderModelSelector } from '@/modules/automations/components/form/provider-model-selector';
 import { useGitHubEvents } from '@/modules/automations/hooks/use-github-events';
-import { useSupportedModels } from '@/modules/automations/hooks/use-supported-models';
 import { useOrg } from '@/modules/organizations/hooks/use-org';
 import { useSharedVariables } from '@/modules/variables/hooks/use-shared-variables';
 import type { AutomationFormValues } from '@/modules/automations/lib/automation-schemas';
 import { getAvailableVariables } from '@/modules/variables/lib/variable-catalog';
 import { useCallback, useMemo, useRef, type ReactElement } from 'react';
-import type { Control, UseFormWatch } from 'react-hook-form';
-
-const DEFAULT_MODEL_SENTINEL = '__default__';
+import type { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 
 interface AutomationPromptStepProps {
   readonly control: Control<AutomationFormValues>;
   readonly watch: UseFormWatch<AutomationFormValues>;
+  readonly setValue: UseFormSetValue<AutomationFormValues>;
 }
 
-export function AutomationPromptStep({ control, watch }: AutomationPromptStepProps): ReactElement {
+export function AutomationPromptStep({
+  control,
+  watch,
+  setValue,
+}: AutomationPromptStepProps): ReactElement {
   const editorRef = useRef<PromptEditorRef>(null);
   const { events: allEvents } = useGitHubEvents();
-  const { models, defaultModelName } = useSupportedModels();
   const { org } = useOrg();
   const orgId = org?.id ?? 0;
   const { variables: allSharedVariables } = useSharedVariables({ orgId });
@@ -73,37 +68,7 @@ export function AutomationPromptStep({ control, watch }: AutomationPromptStepPro
 
   return (
     <div className="space-y-8">
-      <FormField
-        control={control}
-        name="model"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Model</FormLabel>
-            <Select
-              value={field.value ?? DEFAULT_MODEL_SENTINEL}
-              onValueChange={(value: string) =>
-                field.onChange(value === DEFAULT_MODEL_SENTINEL ? null : value)
-              }
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value={DEFAULT_MODEL_SENTINEL}>{defaultModelName}</SelectItem>
-                {models.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    {model.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormDescription>Select the Claude model to use for this automation.</FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <ProviderModelSelector control={control} watch={watch} setValue={setValue} />
 
       <div className="space-y-4">
         <div>

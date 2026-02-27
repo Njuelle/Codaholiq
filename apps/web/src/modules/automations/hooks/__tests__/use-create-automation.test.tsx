@@ -36,6 +36,7 @@ const validPayload: AutomationFormValues = {
   description: null,
   repoId: 1,
   promptTemplate: 'Fix {{file}}',
+  provider: 'claude-code',
   model: null,
   enabled: true,
   variables: [],

@@ -32,6 +32,7 @@ export function RepositoryDetailPage(): ReactElement {
     secretsConfigured,
     hasAnthropicKey,
     hasOAuthToken,
+    providerSecrets,
     isLoading: isSetupLoading,
     isError: isSetupError,
   } = useSetupStatus({ orgId, repoId });
@@ -99,6 +100,7 @@ export function RepositoryDetailPage(): ReactElement {
             secretsConfigured={secretsConfigured}
             hasAnthropicKey={hasAnthropicKey}
             hasOAuthToken={hasOAuthToken}
+            providerSecrets={providerSecrets}
             repoFullName={repo.fullName}
             isLoading={isSetupLoading}
             isError={isSetupError}

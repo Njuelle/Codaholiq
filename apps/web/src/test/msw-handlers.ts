@@ -151,6 +151,49 @@ export const defaultHandlers = [
     });
   }),
 
+  http.get('/api/providers', () => {
+    return HttpResponse.json({
+      data: {
+        providers: [
+          {
+            id: 'claude-code',
+            name: 'Claude Code',
+            description: 'Anthropic Claude Code Action',
+            models: [
+              {
+                id: 'claude-sonnet-4-5-20250929',
+                name: 'Claude Sonnet 4.5',
+                description: 'Balanced speed and capability',
+              },
+              {
+                id: 'claude-opus-4-6',
+                name: 'Claude Opus 4.6',
+                description: 'Most capable',
+              },
+            ],
+            defaultModelId: 'claude-sonnet-4-5-20250929',
+            secrets: [
+              { name: 'ANTHROPIC_API_KEY', required: false, description: 'Anthropic API key' },
+            ],
+          },
+          {
+            id: 'codex',
+            name: 'OpenAI Codex',
+            description: 'OpenAI Codex coding agent',
+            models: [
+              { id: 'codex-mini', name: 'Codex Mini', description: 'Fast and cost-effective' },
+              { id: 'o4-mini', name: 'o4-mini', description: 'General purpose reasoning model' },
+            ],
+            defaultModelId: 'codex-mini',
+            secrets: [{ name: 'OPENAI_API_KEY', required: true, description: 'OpenAI API key' }],
+          },
+        ],
+        defaultProviderId: 'claude-code',
+      },
+      requestId: 'test-request-id',
+    });
+  }),
+
   http.get('/api/workflow-template', () => {
     return HttpResponse.json({
       data: {
@@ -322,6 +365,20 @@ export const defaultHandlers = [
         secretsConfigured: true,
         hasAnthropicKey: true,
         hasOAuthToken: false,
+        providerSecrets: [
+          {
+            providerId: 'claude-code',
+            providerName: 'Claude Code',
+            configured: true,
+            secrets: [{ name: 'ANTHROPIC_API_KEY', exists: true }],
+          },
+          {
+            providerId: 'codex',
+            providerName: 'OpenAI Codex',
+            configured: false,
+            secrets: [{ name: 'OPENAI_API_KEY', exists: false }],
+          },
+        ],
       },
       requestId: 'test-request-id',
     });
@@ -357,6 +414,7 @@ export const defaultHandlers = [
                 triggerType: 'event',
                 triggerConfig: { events: ['pull_request.opened'] },
                 promptTemplate: 'Review the PR in {{repo.full_name}}.',
+                provider: 'claude-code',
                 model: null,
                 variables: [],
               },
@@ -374,6 +432,7 @@ export const defaultHandlers = [
                 triggerType: 'event',
                 triggerConfig: { events: ['pull_request.opened'] },
                 promptTemplate: 'Scan the PR in {{repo.full_name}}.',
+                provider: 'claude-code',
                 model: null,
                 variables: [],
               },

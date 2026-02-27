@@ -2,6 +2,7 @@ import { Badge } from '@/common/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { TriggerBadge } from '@/common/components/trigger-badge';
 import { OPERATOR_LABELS } from '@/modules/automations/lib/condition-operators';
+import { useProviders } from '@/modules/automations/hooks/use-providers';
 import { formatCronExpression, formatDate } from '@/common/lib/format';
 import type {
   AutomationWithVariables,
@@ -73,6 +74,8 @@ function TriggerDetails({
 }
 
 export function AutomationInfoCard({ automation }: AutomationInfoCardProps): ReactElement {
+  const { getProviderName } = useProviders();
+
   return (
     <Card>
       <CardHeader>
@@ -95,6 +98,11 @@ export function AutomationInfoCard({ automation }: AutomationInfoCardProps): Rea
               <TriggerBadge triggerType={automation.triggerType} />
               <TriggerDetails automation={automation} />
             </dd>
+          </div>
+
+          <div>
+            <dt className="text-sm font-medium text-muted-foreground">Provider</dt>
+            <dd className="mt-1 text-sm">{getProviderName(automation.provider)}</dd>
           </div>
 
           <div>

@@ -43,6 +43,9 @@ export const queryKeys = {
   models: {
     all: () => ['models'] as const,
   },
+  providers: {
+    all: () => ['providers'] as const,
+  },
   workflowTemplate: () => ['workflow-template'] as const,
   catalog: {
     all: () => ['automation-catalog'] as const,

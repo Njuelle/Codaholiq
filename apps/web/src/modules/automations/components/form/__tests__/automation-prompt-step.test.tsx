@@ -100,7 +100,9 @@ function TestWrapper({
 function renderPromptStep(defaultValues?: Partial<AutomationFormValues>): void {
   renderWithProviders(
     <TestWrapper defaultValues={defaultValues}>
-      {(form) => <AutomationPromptStep control={form.control} watch={form.watch} />}
+      {(form) => (
+        <AutomationPromptStep control={form.control} watch={form.watch} setValue={form.setValue} />
+      )}
     </TestWrapper>,
   );
 }

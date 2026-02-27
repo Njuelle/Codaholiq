@@ -33,6 +33,7 @@ function automationToFormValues(automation: AutomationWithVariables): Automation
     description: automation.description,
     repoId: automation.repoId,
     promptTemplate: automation.promptTemplate,
+    provider: automation.provider,
     model: automation.model,
     enabled: automation.enabled,
     variables: [] as {
@@ -162,7 +163,11 @@ function AutomationEditForm({
             </TabsContent>
 
             <TabsContent value="prompt" className="mt-6 flex-none">
-              <AutomationPromptStep control={form.control} watch={form.watch} />
+              <AutomationPromptStep
+                control={form.control}
+                watch={form.watch}
+                setValue={form.setValue}
+              />
             </TabsContent>
 
             <TabsContent value="workflow" className="mt-6 flex-none">
