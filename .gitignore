@@ -33,3 +33,5 @@ coverage/
 # Vite
 apps/web/node_modules/.vite/
 
+roadmap/
+

@@ -5,6 +5,8 @@ import { RepoSyncService } from './repo-sync.service';
 import { AutomationService } from '../automations/automations.service';
 import { DEFAULT_WORKFLOW_FILE } from '../automations/automations.schema';
 import { WORKFLOW_TEMPLATE } from '../../common/constants/workflow-template';
+import { ProvidersRegistry } from '../providers/providers.registry';
+import type { ProviderSecretStatus } from '../providers/provider.types';
 import { repositories } from './github.schema';
 import type { ListReposQuery } from './dto/list-repos.dto';
 
@@ -23,6 +25,8 @@ export class RepositoriesService {
     private readonly repoSyncService: RepoSyncService,
     @Inject(AutomationService)
     private readonly automationService: AutomationService,
+    @Inject(ProvidersRegistry)
+    private readonly providersRegistry: ProvidersRegistry,
   ) {}
 
   async list({ orgId, filters }: { orgId: number; filters: ListReposQuery }): Promise<{
@@ -85,6 +89,7 @@ export class RepositoriesService {
     secretsConfigured: boolean;
     hasAnthropicKey: boolean;
     hasOAuthToken: boolean;
+    providerSecrets: ProviderSecretStatus[];
   }> {
     const repo = await this.repoRepository.findRepositoryById({ id: repoId });
     if (!repo || repo.orgId !== orgId) {
@@ -113,11 +118,31 @@ export class RepositoriesService {
     const hasAnthropicKey = secretNames.includes('ANTHROPIC_API_KEY');
     const hasOAuthToken = secretNames.includes('CLAUDE_CODE_OAUTH_TOKEN');
 
+    const secretSet = new Set(secretNames);
+    const providerSecrets = this.providersRegistry.getAll().map((provider) => {
+      const secrets = provider.secrets.map((s) => ({
+        name: s.name,
+        exists: secretSet.has(s.name),
+      }));
+      const requiredSecrets = provider.secrets.filter((s) => s.required);
+      const configured =
+        requiredSecrets.length > 0
+          ? requiredSecrets.every((s) => secretSet.has(s.name))
+          : secrets.some((s) => s.exists);
+      return {
+        providerId: provider.id,
+        providerName: provider.name,
+        configured,
+        secrets,
+      };
+    });
+
     return {
       workflowFileExists,
       secretsConfigured: hasAnthropicKey || hasOAuthToken,
       hasAnthropicKey,
       hasOAuthToken,
+      providerSecrets,
     };
   }
 
@@ -192,12 +217,13 @@ export class RepositoriesService {
           '## What this PR does',
           '',
           'Adds the Codaholiq workflow file (`.github/workflows/codaholiq.yml`) that enables',
-          'Claude Code automations to be dispatched from the Codaholiq platform.',
+          'AI coding automations to be dispatched from the Codaholiq platform.',
           '',
           'This workflow supports:',
-          '- `workflow_dispatch` trigger with `prompt` and `model` inputs',
+          '- `workflow_dispatch` trigger with `prompt`, `provider`, and `model` inputs',
           '- Automatic dependency installation (npm, yarn, pnpm, bun)',
-          '- Claude Code Action v1 integration',
+          '- Multiple AI providers: Claude Code, OpenCode, OpenAI Codex, Gemini CLI',
+          '- Conditional provider steps — only the selected provider runs per execution',
           '',
           '---',
           '*Created automatically by Codaholiq*',

@@ -104,6 +104,7 @@ export class CronTriggerProcessor extends WorkerHost {
         automationId,
         triggerEvent: { type: 'cron', schedule: cronConfig.schedule },
         resolvedPrompt: '',
+        provider: automation.provider,
       });
 
       await this.executionRepository.updateStatus({
@@ -122,6 +123,7 @@ export class CronTriggerProcessor extends WorkerHost {
       workflowFile: DEFAULT_WORKFLOW_FILE,
       triggerEvent: { type: 'cron', schedule: cronConfig.schedule },
       resolvedPrompt,
+      provider: automation.provider,
       model: automation.model,
     });
 

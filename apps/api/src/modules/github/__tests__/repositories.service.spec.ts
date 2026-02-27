@@ -4,6 +4,41 @@ import type { GitHubEntityRepository } from '../github-entity.repository';
 import type { GitHubApiService } from '../github-api.service';
 import type { RepoSyncService } from '../repo-sync.service';
 import type { AutomationService } from '../../automations/automations.service';
+import type { ProvidersRegistry } from '../../providers/providers.registry';
+
+function createMockProvidersRegistry() {
+  return {
+    getAll: vi.fn().mockReturnValue([
+      {
+        id: 'claude-code',
+        name: 'Claude Code',
+        secrets: [
+          { name: 'ANTHROPIC_API_KEY', required: false },
+          { name: 'CLAUDE_CODE_OAUTH_TOKEN', required: false },
+        ],
+      },
+      {
+        id: 'opencode',
+        name: 'OpenCode',
+        secrets: [
+          { name: 'ANTHROPIC_API_KEY', required: false },
+          { name: 'OPENAI_API_KEY', required: false },
+          { name: 'GEMINI_API_KEY', required: false },
+        ],
+      },
+      {
+        id: 'codex',
+        name: 'OpenAI Codex',
+        secrets: [{ name: 'OPENAI_API_KEY', required: true }],
+      },
+      {
+        id: 'gemini',
+        name: 'Gemini CLI',
+        secrets: [{ name: 'GEMINI_API_KEY', required: true }],
+      },
+    ]),
+  };
+}
 
 function createMockRepoRepository() {
   return {
@@ -79,6 +114,7 @@ describe('RepositoriesService', () => {
       githubApiService as unknown as GitHubApiService,
       syncService as unknown as RepoSyncService,
       automationService as unknown as AutomationService,
+      createMockProvidersRegistry() as unknown as ProvidersRegistry,
     );
   });
 

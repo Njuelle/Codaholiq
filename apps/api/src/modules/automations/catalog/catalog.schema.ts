@@ -4,6 +4,7 @@ import {
   CronTriggerConfigSchema,
   ManualTriggerConfigSchema,
 } from '../dto/trigger-config.dto';
+import { PROVIDER_IDS } from '../../providers/providers.registry';
 
 const CatalogVariableSchema = z.object({
   key: z.string().min(1).max(100),
@@ -18,12 +19,11 @@ const sharedFields = {
   category: z.string().min(1).max(50),
   icon: z.string().min(1).max(50),
   promptTemplate: z.string().min(1),
-  model: z
-    .string()
-    .regex(/^claude-[a-z0-9.-]+$/, 'Model must be a valid Claude model identifier')
-    .nullable()
+  provider: z
+    .enum(PROVIDER_IDS, { message: 'Unsupported provider' })
     .optional()
-    .default(null),
+    .default('claude-code'),
+  model: z.string().max(100).nullable().optional().default(null),
   variables: z.array(CatalogVariableSchema).optional().default([]),
 };
 

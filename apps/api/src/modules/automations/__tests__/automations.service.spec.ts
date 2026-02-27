@@ -10,6 +10,27 @@ import { CronSchedulerService } from '../triggers/cron-scheduler.service';
 import { SanitizationService } from '../../../common/sanitization/sanitization.service';
 import { VariablesService } from '../../variables/variables.service';
 import { CatalogService } from '../catalog/catalog.service';
+import { ProvidersRegistry } from '../../providers/providers.registry';
+
+function createMockProvidersRegistry() {
+  return {
+    getAll: vi.fn().mockReturnValue([]),
+    getById: vi.fn().mockReturnValue(undefined),
+    getByIdOrThrow: vi.fn().mockReturnValue({
+      id: 'claude-code',
+      name: 'Claude Code',
+      models: [],
+      defaultModelId: 'claude-sonnet-4-5-20250929',
+      secrets: [],
+      modelIdPattern: /^claude-[a-z0-9.-]+$/,
+    }),
+    getDefault: vi.fn(),
+    getProviderIds: vi.fn().mockReturnValue(['claude-code']),
+    validateModel: vi.fn().mockReturnValue(true),
+    getModelsForProvider: vi.fn().mockReturnValue([]),
+    mapDispatchInputs: vi.fn().mockReturnValue({ provider: 'claude-code', prompt: 'test' }),
+  };
+}
 
 function createMockVariablesService() {
   return {
@@ -111,6 +132,7 @@ function makeAutomation(overrides: Record<string, unknown> = {}) {
     triggerType: 'event' as const,
     triggerConfig: { events: ['pull_request.opened'] },
     promptTemplate: 'Review {{pr.title}}',
+    provider: 'claude-code',
     model: null,
     workflowFile: '.github/workflows/codaholiq.yml',
     enabled: true,
@@ -155,6 +177,7 @@ describe('AutomationService', () => {
       sanitizationService as unknown as SanitizationService,
       variablesService as unknown as VariablesService,
       catalogService as unknown as CatalogService,
+      createMockProvidersRegistry() as unknown as ProvidersRegistry,
       { get: vi.fn().mockReturnValue(undefined) } as unknown as ConfigService,
     );
   });
@@ -166,6 +189,7 @@ describe('AutomationService', () => {
       triggerType: 'event' as const,
       triggerConfig: { events: ['pull_request.opened'] },
       promptTemplate: 'Review {{pr.title}}',
+      provider: 'claude-code',
       model: null,
       enabled: true,
       variables: [],
@@ -599,6 +623,7 @@ describe('AutomationService', () => {
         workflowFile: '.github/workflows/codaholiq.yml',
         triggerEvent: { type: 'manual', triggered_by: 1 },
         resolvedPrompt: 'resolved prompt',
+        provider: 'claude-code',
         model: null,
       });
     });
@@ -681,6 +706,7 @@ describe('AutomationService', () => {
       triggerType: 'event' as const,
       triggerConfig: { events: ['pull_request.opened'] },
       promptTemplate: 'Review the PR in {{repo.full_name}}.',
+      provider: 'claude-code',
       model: null,
       variables: [],
     };

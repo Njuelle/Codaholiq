@@ -34,6 +34,7 @@ export const automations = pgTable(
     triggerType: triggerTypeEnum('trigger_type').notNull(),
     triggerConfig: jsonb('trigger_config').notNull(),
     promptTemplate: text('prompt_template').notNull(),
+    provider: varchar('provider', { length: 50 }).notNull().default('claude-code'),
     model: varchar('model', { length: 100 }),
     workflowFile: varchar('workflow_file', { length: 255 }).notNull(),
     enabled: boolean('enabled').notNull().default(true),

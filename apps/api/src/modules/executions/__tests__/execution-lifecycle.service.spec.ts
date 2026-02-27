@@ -9,6 +9,7 @@ function createMockExecutionRepository() {
       status: 'pending',
       triggerEvent: null,
       resolvedPrompt: 'test prompt',
+      provider: 'claude-code',
       githubRunId: null,
       githubRunUrl: null,
       errorMessage: null,
@@ -88,6 +89,7 @@ describe('ExecutionLifecycleService', () => {
         workflowFile: '.github/workflows/codaholiq.yml',
         triggerEvent: { type: 'manual', triggered_by: 1 },
         resolvedPrompt: 'test prompt',
+        provider: 'claude-code',
       });
 
       expect(result.id).toBe(1);
@@ -97,6 +99,7 @@ describe('ExecutionLifecycleService', () => {
         automationId: 10,
         triggerEvent: { type: 'manual', triggered_by: 1 },
         resolvedPrompt: 'test prompt',
+        provider: 'claude-code',
       });
 
       expect(queue.add).toHaveBeenCalledWith(
@@ -110,6 +113,7 @@ describe('ExecutionLifecycleService', () => {
           repo: 'widgets',
           workflowFile: '.github/workflows/codaholiq.yml',
           ref: 'main',
+          provider: 'claude-code',
         },
         expect.objectContaining({
           attempts: 3,
@@ -128,6 +132,7 @@ describe('ExecutionLifecycleService', () => {
           repoId: 999,
           workflowFile: 'ci.yml',
           resolvedPrompt: 'prompt',
+          provider: 'claude-code',
         }),
       ).rejects.toThrow(NotFoundException);
     });
@@ -142,6 +147,7 @@ describe('ExecutionLifecycleService', () => {
           repoId: 100,
           workflowFile: 'ci.yml',
           resolvedPrompt: 'prompt',
+          provider: 'claude-code',
         }),
       ).rejects.toThrow(NotFoundException);
     });
@@ -268,6 +274,7 @@ describe('ExecutionLifecycleService', () => {
           status: 'failed',
           triggerEvent: { type: 'manual', triggered_by: 1 },
           resolvedPrompt: 'original prompt',
+          provider: 'claude-code',
         },
         automationName: 'Fix TypeScript errors',
         repoId: 100,
@@ -278,6 +285,7 @@ describe('ExecutionLifecycleService', () => {
         automationId: 10,
         status: 'pending',
         resolvedPrompt: 'original prompt',
+        provider: 'claude-code',
         createdAt: new Date(),
       });
 
@@ -288,6 +296,7 @@ describe('ExecutionLifecycleService', () => {
         automationId: 10,
         triggerEvent: { type: 'manual', triggered_by: 1 },
         resolvedPrompt: 'original prompt',
+        provider: 'claude-code',
       });
       expect(queue.add).toHaveBeenCalledWith(
         'dispatch',

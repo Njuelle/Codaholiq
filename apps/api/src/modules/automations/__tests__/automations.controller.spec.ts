@@ -98,6 +98,7 @@ describe('AutomationsController', () => {
       triggerType: 'event',
       triggerConfig: { events: ['pull_request.opened'] },
       promptTemplate: 'Review {{pr.title}}',
+      provider: 'claude-code',
     };
 
     it('should create automation and return 201', async () => {

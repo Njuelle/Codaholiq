@@ -45,6 +45,7 @@ export class ExecutionLifecycleService {
     workflowFile,
     triggerEvent,
     resolvedPrompt,
+    provider,
     model,
   }: {
     automationId: number;
@@ -53,6 +54,7 @@ export class ExecutionLifecycleService {
     workflowFile: string;
     triggerEvent?: Record<string, unknown> | null;
     resolvedPrompt: string;
+    provider: string;
     model?: string | null;
   }): Promise<typeof executions.$inferSelect> {
     // Look up orgId from the repo to enforce concurrent execution quota
@@ -72,6 +74,7 @@ export class ExecutionLifecycleService {
       automationId,
       triggerEvent,
       resolvedPrompt,
+      provider,
       model,
     });
 
@@ -81,6 +84,7 @@ export class ExecutionLifecycleService {
       automationName,
       repoId,
       workflowFile,
+      provider,
       model,
     });
 
@@ -177,6 +181,7 @@ export class ExecutionLifecycleService {
       workflowFile: DEFAULT_WORKFLOW_FILE,
       triggerEvent: (execution.triggerEvent as Record<string, unknown>) ?? null,
       resolvedPrompt: execution.resolvedPrompt,
+      provider: execution.provider,
       model: execution.model,
     });
   }
@@ -187,6 +192,7 @@ export class ExecutionLifecycleService {
     automationName,
     repoId,
     workflowFile,
+    provider,
     model,
   }: {
     executionId: number;
@@ -194,6 +200,7 @@ export class ExecutionLifecycleService {
     automationName: string;
     repoId: number;
     workflowFile: string;
+    provider: string;
     model?: string | null;
   }): Promise<DispatchJobData> {
     const repo = await this.githubEntityRepository.findRepositoryById({
@@ -219,6 +226,7 @@ export class ExecutionLifecycleService {
       repo: repo.name,
       workflowFile,
       ref: repo.defaultBranch,
+      provider,
       ...(model ? { model } : {}),
     };
   }

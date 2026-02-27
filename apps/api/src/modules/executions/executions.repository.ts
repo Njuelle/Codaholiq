@@ -16,11 +16,13 @@ export class ExecutionRepository {
     automationId,
     triggerEvent,
     resolvedPrompt,
+    provider,
     model,
   }: {
     automationId: number;
     triggerEvent?: Record<string, unknown> | null;
     resolvedPrompt: string;
+    provider: string;
     model?: string | null;
   }): Promise<typeof executions.$inferSelect> {
     const [execution] = await this.db
@@ -29,6 +31,7 @@ export class ExecutionRepository {
         automationId,
         triggerEvent: triggerEvent ?? null,
         resolvedPrompt,
+        provider,
         model: model ?? null,
         status: 'pending',
       })

@@ -37,13 +37,14 @@ describe('WorkflowTemplateController', () => {
       expect(template).toContain('anthropics/claude-code-action@v1');
     });
 
-    it('should include prompt and model inputs', async () => {
+    it('should include prompt, provider, and model inputs', async () => {
       const response = await request(app.getHttpServer()).get('/workflow-template').expect(200);
 
       const { template } = response.body as { template: string };
 
-      expect(template).toContain("description: 'The prompt to send to Claude Code'");
-      expect(template).toContain("description: 'The Claude model to use'");
+      expect(template).toContain("description: 'The prompt to send to the AI coding agent'");
+      expect(template).toContain("description: 'The AI provider to use'");
+      expect(template).toContain("description: 'The model to use (format depends on provider)'");
     });
 
     it('should include required permissions', async () => {

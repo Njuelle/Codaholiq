@@ -4,15 +4,7 @@ import {
   CronTriggerConfigSchema,
   ManualTriggerConfigSchema,
 } from './trigger-config.dto';
-import { SUPPORTED_MODEL_IDS } from '../models.constants';
-
-const modelSchema = z
-  .string()
-  .max(100)
-  .refine((val) => SUPPORTED_MODEL_IDS.includes(val), { message: 'Unsupported model' })
-  .nullable()
-  .optional()
-  .default(null);
+import { PROVIDER_IDS } from '../../providers/providers.registry';
 
 const VariableSchema = z.object({
   key: z.string().min(1, 'Key is required').max(100),
@@ -26,7 +18,8 @@ const baseFields = {
   description: z.string().nullable().optional(),
   repoId: z.number().int().positive(),
   promptTemplate: z.string().min(1, 'Prompt template is required'),
-  model: modelSchema,
+  provider: z.enum(PROVIDER_IDS, { message: 'Unsupported provider' }),
+  model: z.string().max(100).nullable().optional().default(null),
   enabled: z.boolean().optional().default(true),
   variables: z.array(VariableSchema).optional().default([]),
 };

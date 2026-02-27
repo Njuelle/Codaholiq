@@ -19,6 +19,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { VariablesModule } from './modules/variables/variables.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
+import { ProvidersModule } from './modules/providers/providers.module';
 import { CleanupModule } from './modules/cleanup/cleanup.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
@@ -70,6 +71,7 @@ import { EnvValidationService } from './common/crypto/env-validation.service';
     VariablesModule,
     NotificationsModule,
     PermissionsModule,
+    ProvidersModule,
     CleanupModule,
     HealthModule,
   ],

@@ -1,0 +1,2 @@
+ALTER TABLE "automations" ADD COLUMN "provider" varchar(50) DEFAULT 'claude-code' NOT NULL;--> statement-breakpoint
+ALTER TABLE "executions" ADD COLUMN "provider" varchar(50) DEFAULT 'claude-code' NOT NULL;

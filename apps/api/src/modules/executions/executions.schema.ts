@@ -34,6 +34,7 @@ export const executions = pgTable(
     status: executionStatusEnum('status').notNull().default('pending'),
     triggerEvent: jsonb('trigger_event'),
     resolvedPrompt: text('resolved_prompt').notNull(),
+    provider: varchar('provider', { length: 50 }).notNull().default('claude-code'),
     model: varchar('model', { length: 100 }),
     githubRunId: bigint('github_run_id', { mode: 'number' }),
     githubRunUrl: text('github_run_url'),

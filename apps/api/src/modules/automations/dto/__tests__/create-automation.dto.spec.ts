@@ -4,6 +4,7 @@ const validBase = {
   name: 'Deploy on push',
   repoId: 1,
   promptTemplate: 'Run deploy script',
+  provider: 'claude-code',
 };
 
 describe('AutomationCreateSchema', () => {

@@ -16,6 +16,7 @@ import { CronSchedulerService } from './triggers/cron-scheduler.service';
 import { SanitizationService } from '../../common/sanitization/sanitization.service';
 import { VariablesService } from '../variables/variables.service';
 import { CatalogService } from './catalog/catalog.service';
+import { ProvidersRegistry, DEFAULT_PROVIDER_ID } from '../providers/providers.registry';
 import { AutomationCreateDto } from './dto/create-automation.dto';
 import { AutomationUpdateDto } from './dto/update-automation.dto';
 import type { ValidatePromptDto } from './dto/validate-prompt.dto';
@@ -49,6 +50,8 @@ export class AutomationService {
     private readonly variablesService: VariablesService,
     @Inject(CatalogService)
     private readonly catalogService: CatalogService,
+    @Inject(ProvidersRegistry)
+    private readonly providersRegistry: ProvidersRegistry,
     @Inject(ConfigService)
     private readonly configService: ConfigService,
   ) {
@@ -100,6 +103,7 @@ export class AutomationService {
         triggerType: template.triggerType,
         triggerConfig: template.triggerConfig,
         promptTemplate: template.promptTemplate,
+        provider: template.provider ?? DEFAULT_PROVIDER_ID,
         model: template.model,
         enabled: true,
         variables: template.variables.map((v) => ({
@@ -151,6 +155,7 @@ export class AutomationService {
       triggerType: 'event' | 'cron' | 'manual';
       triggerConfig: Record<string, unknown>;
       promptTemplate: string;
+      provider?: string;
       model?: string | null;
       enabled: boolean;
       variables?: {
@@ -165,6 +170,9 @@ export class AutomationService {
       triggerType: dto.triggerType,
       triggerConfig: dto.triggerConfig,
     });
+
+    const provider = dto.provider ?? DEFAULT_PROVIDER_ID;
+    this.validateProviderAndModel({ provider, model: dto.model });
 
     this.promptTemplate.validateTemplate({ template: dto.promptTemplate });
 
@@ -192,6 +200,7 @@ export class AutomationService {
       triggerType: dto.triggerType,
       triggerConfig: dto.triggerConfig,
       promptTemplate: dto.promptTemplate,
+      provider,
       model: dto.model ?? null,
       workflowFile: DEFAULT_WORKFLOW_FILE,
       enabled: dto.enabled,
@@ -281,6 +290,13 @@ export class AutomationService {
 
     if (dto.promptTemplate) {
       this.promptTemplate.validateTemplate({ template: dto.promptTemplate });
+    }
+
+    if (dto.provider !== undefined || dto.model !== undefined) {
+      this.validateProviderAndModel({
+        provider: dto.provider ?? existing.provider,
+        model: dto.model !== undefined ? dto.model : existing.model,
+      });
     }
 
     const updateData = this.buildUpdateData({ dto });
@@ -406,6 +422,7 @@ export class AutomationService {
       workflowFile: DEFAULT_WORKFLOW_FILE,
       triggerEvent: { type: 'manual', triggered_by: userId },
       resolvedPrompt,
+      provider: automation.provider,
       model: automation.model,
     });
   }
@@ -460,6 +477,7 @@ export class AutomationService {
     triggerType: 'event' | 'cron' | 'manual';
     triggerConfig: Record<string, unknown>;
     promptTemplate: string;
+    provider: string;
     model: string | null;
     enabled: boolean;
   }> {
@@ -469,6 +487,7 @@ export class AutomationService {
       triggerType: 'event' | 'cron' | 'manual';
       triggerConfig: Record<string, unknown>;
       promptTemplate: string;
+      provider: string;
       model: string | null;
       enabled: boolean;
     }> = {};
@@ -482,11 +501,25 @@ export class AutomationService {
         ? this.sanitization.sanitizeForStorage({ input: dto.description })
         : dto.description;
     if (dto.promptTemplate !== undefined) data.promptTemplate = dto.promptTemplate;
+    if (dto.provider !== undefined) data.provider = dto.provider;
     if (dto.model !== undefined) data.model = dto.model ?? null;
     if (dto.enabled !== undefined) data.enabled = dto.enabled;
     if (dto.triggerType !== undefined) data.triggerType = dto.triggerType;
     if (dto.triggerConfig !== undefined) data.triggerConfig = dto.triggerConfig;
     return data;
+  }
+
+  private validateProviderAndModel({
+    provider,
+    model,
+  }: {
+    provider: string;
+    model?: string | null;
+  }): void {
+    this.providersRegistry.getByIdOrThrow(provider);
+    if (model && !this.providersRegistry.validateModel({ providerId: provider, modelId: model })) {
+      throw new BadRequestException(`Model "${model}" is not valid for provider "${provider}"`);
+    }
   }
 
   private validateTriggerConfig({

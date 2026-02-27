@@ -14,6 +14,7 @@ export interface CatalogTemplate {
   readonly triggerType: 'event' | 'cron' | 'manual';
   readonly triggerConfig: Record<string, unknown>;
   readonly promptTemplate: string;
+  readonly provider: string;
   readonly model: string | null;
   readonly variables: readonly CatalogVariable[];
 }

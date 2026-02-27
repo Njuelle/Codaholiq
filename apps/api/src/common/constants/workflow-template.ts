@@ -2,6 +2,9 @@
  * Canonical workflow template content for the Codaholiq GitHub Actions workflow.
  * Source of truth: .github/workflows/codaholiq.yml
  *
+ * Unified multi-provider template — a single workflow file with conditional
+ * steps that route to the correct AI coding agent based on the `provider` input.
+ *
  * Used by:
  * - WorkflowTemplateController (GET /workflow-template)
  * - RepositoriesService (setupWorkflowPR — creates PR with this content)
@@ -12,11 +15,16 @@ on:
   workflow_dispatch:
     inputs:
       prompt:
-        description: 'The prompt to send to Claude Code'
+        description: 'The prompt to send to the AI coding agent'
         required: true
         type: string
+      provider:
+        description: 'The AI provider to use'
+        required: true
+        type: string
+        default: 'claude-code'
       model:
-        description: 'The Claude model to use'
+        description: 'The model to use (format depends on provider)'
         required: false
         type: string
         default: ''
@@ -33,15 +41,15 @@ jobs:
   execute:
     runs-on: ubuntu-latest
     steps:
-      - name: Validate model input
-        if: github.event.inputs.model != ''
+      - name: Validate provider input
         run: |
-          if [[ ! "$MODEL" =~ ^claude-[a-z0-9.-]+$ ]]; then
-            echo "::error::Invalid model identifier: $MODEL"
+          KNOWN="claude-code opencode codex gemini"
+          if ! echo "$KNOWN" | grep -qw "$PROVIDER"; then
+            echo "::error::Unknown provider: $PROVIDER (expected one of: $KNOWN)"
             exit 1
           fi
         env:
-          MODEL: \${{ github.event.inputs.model }}
+          PROVIDER: \${{ github.event.inputs.provider }}
 
       - uses: actions/checkout@v4
         with:
@@ -67,7 +75,10 @@ jobs:
             npm ci
           fi
 
-      - uses: anthropics/claude-code-action@v1
+      # --- Claude Code ---
+      - name: Run Claude Code
+        if: github.event.inputs.provider == 'claude-code'
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: \${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: \${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -76,4 +87,35 @@ jobs:
           claude_args: >-
             --allowedTools "Bash" "Read" "Edit" "Write" "Glob" "Grep" "WebFetch" "Task"
             \${{ github.event.inputs.model != '' && format('--model "{0}"', github.event.inputs.model) || '' }}
+
+      # --- OpenCode ---
+      - name: Run OpenCode
+        if: github.event.inputs.provider == 'opencode'
+        uses: anomalyco/opencode/github@v1
+        with:
+          model: \${{ github.event.inputs.model }}
+          prompt: \${{ github.event.inputs.prompt }}
+        env:
+          ANTHROPIC_API_KEY: \${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: \${{ secrets.GEMINI_API_KEY }}
+
+      # --- OpenAI Codex ---
+      - name: Run OpenAI Codex
+        if: github.event.inputs.provider == 'codex'
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: \${{ secrets.OPENAI_API_KEY }}
+          prompt: \${{ github.event.inputs.prompt }}
+          model: \${{ github.event.inputs.model }}
+          sandbox: 'workspace-write'
+
+      # --- Gemini CLI ---
+      - name: Run Gemini CLI
+        if: github.event.inputs.provider == 'gemini'
+        uses: google-github-actions/run-gemini-cli@v1
+        with:
+          gemini_api_key: \${{ secrets.GEMINI_API_KEY }}
+          prompt: \${{ github.event.inputs.prompt }}
+          gemini_model: \${{ github.event.inputs.model }}
 `;

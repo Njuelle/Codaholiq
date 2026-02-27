@@ -42,6 +42,7 @@ export interface DispatchJobData {
   readonly repo: string;
   readonly workflowFile: string;
   readonly ref: string;
+  readonly provider: string;
   readonly model?: string;
   // resolvedPrompt intentionally excluded — fetched from DB inside processor
   // to avoid storing sensitive prompt data in Redis (SEC-002)

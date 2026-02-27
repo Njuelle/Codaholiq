@@ -55,6 +55,7 @@ function makeDispatchJob(overrides: Partial<DispatchJobData> = {}): Job<Dispatch
     repo: 'widgets',
     workflowFile: '.github/workflows/codaholiq.yml',
     ref: 'main',
+    provider: 'claude-code',
     ...overrides,
   };
   return { name: 'dispatch', data } as Job<DispatchJobData>;
@@ -130,6 +131,26 @@ describe('ExecutionProcessor', () => {
       notificationRepo as never,
       createMockRedisLogPublisher() as never,
       createMockFailureTracker() as never,
+      {
+        mapDispatchInputs: vi
+          .fn()
+          .mockImplementation(
+            ({
+              prompt,
+              providerId,
+              model,
+            }: {
+              prompt: string;
+              providerId: string;
+              model?: string;
+            }) => {
+              const inputs: Record<string, string> = { provider: providerId, prompt };
+              if (model) inputs['model'] = model;
+              return inputs;
+            },
+          ),
+        getByIdOrThrow: vi.fn(),
+      } as never,
     );
   });
 
@@ -164,6 +185,7 @@ describe('ExecutionProcessor', () => {
         workflowFile: '.github/workflows/codaholiq.yml',
         ref: 'main',
         inputs: {
+          provider: 'claude-code',
           prompt: 'test prompt',
         },
       });

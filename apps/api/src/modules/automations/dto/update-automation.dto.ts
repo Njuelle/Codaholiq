@@ -4,7 +4,7 @@ import {
   CronTriggerConfigSchema,
   ManualTriggerConfigSchema,
 } from './trigger-config.dto';
-import { SUPPORTED_MODEL_IDS } from '../models.constants';
+import { PROVIDER_IDS } from '../../providers/providers.registry';
 
 const triggerPairSchema = z.discriminatedUnion('triggerType', [
   z.object({
@@ -26,12 +26,8 @@ export const AutomationUpdateSchema = z
     name: z.string().min(1).max(255).optional(),
     description: z.string().nullable().optional(),
     promptTemplate: z.string().min(1).optional(),
-    model: z
-      .string()
-      .max(100)
-      .refine((val) => SUPPORTED_MODEL_IDS.includes(val), { message: 'Unsupported model' })
-      .nullable()
-      .optional(),
+    provider: z.enum(PROVIDER_IDS, { message: 'Unsupported provider' }).optional(),
+    model: z.string().max(100).nullable().optional(),
     enabled: z.boolean().optional(),
   })
   .and(

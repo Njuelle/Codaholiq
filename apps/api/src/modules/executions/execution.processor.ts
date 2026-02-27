@@ -7,6 +7,7 @@ import { GitHubApiService } from '../github/github-api.service';
 import { NotificationRepository } from '../notifications/notifications.repository';
 import { RedisLogPublisherService } from './redis-log-publisher.service';
 import { JobFailureTrackerService } from '../../common/monitoring/job-failure-tracker.service';
+import { ProvidersRegistry } from '../providers/providers.registry';
 import {
   EXECUTION_QUEUE,
   DISPATCH_JOB,
@@ -46,6 +47,8 @@ export class ExecutionProcessor extends WorkerHost {
     private readonly redisLogPublisher: RedisLogPublisherService,
     @Inject(JobFailureTrackerService)
     private readonly failureTracker: JobFailureTrackerService,
+    @Inject(ProvidersRegistry)
+    private readonly providersRegistry: ProvidersRegistry,
   ) {
     super();
   }
@@ -90,16 +93,19 @@ export class ExecutionProcessor extends WorkerHost {
     const dispatchTimestamp = new Date().toISOString();
 
     try {
+      const inputs = this.providersRegistry.mapDispatchInputs({
+        providerId: job.data.provider,
+        prompt: resolvedPrompt,
+        model: job.data.model,
+      });
+
       await this.githubApiService.dispatchWorkflow({
         installationId,
         owner,
         repo,
         workflowFile,
         ref,
-        inputs: {
-          prompt: resolvedPrompt,
-          ...(job.data.model ? { model: job.data.model } : {}),
-        },
+        inputs,
       });
     } catch (error) {
       this.failureTracker.trackFailure({ jobType: 'execution.dispatch', error });

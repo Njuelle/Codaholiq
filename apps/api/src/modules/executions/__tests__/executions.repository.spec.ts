@@ -64,6 +64,7 @@ describe('ExecutionRepository', () => {
       const execution = await repository.create({
         automationId: automation.id,
         resolvedPrompt: 'Fix the login bug',
+        provider: 'claude-code',
       });
 
       expect(execution).toMatchObject({
@@ -84,6 +85,7 @@ describe('ExecutionRepository', () => {
         automationId: automation.id,
         triggerEvent,
         resolvedPrompt: 'Review PR #42',
+        provider: 'claude-code',
       });
 
       expect(execution.triggerEvent).toEqual(triggerEvent);

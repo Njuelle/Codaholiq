@@ -93,9 +93,7 @@ export function mockAutomation(overrides?: Partial<Automation>): Automation {
   };
 }
 
-function mockAutomationVariable(
-  overrides?: Partial<AutomationVariable>,
-): AutomationVariable {
+function mockAutomationVariable(overrides?: Partial<AutomationVariable>): AutomationVariable {
   const id = overrides?.id ?? nextId();
   return {
     id,

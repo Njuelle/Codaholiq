@@ -1,3 +1,7 @@
+/**
+ * @deprecated Use `ProvidersRegistry` from `@/modules/providers` instead.
+ * This file is kept for backward compatibility with the `GET /models` endpoint.
+ */
 export interface ClaudeModel {
   readonly id: string;
   readonly name: string;

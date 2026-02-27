@@ -18,6 +18,7 @@ export class AutomationRepository {
     triggerType,
     triggerConfig,
     promptTemplate,
+    provider,
     model,
     workflowFile,
     enabled,
@@ -31,6 +32,7 @@ export class AutomationRepository {
     triggerType: 'event' | 'cron' | 'manual';
     triggerConfig: Record<string, unknown>;
     promptTemplate: string;
+    provider?: string;
     model?: string | null;
     workflowFile: string;
     enabled?: boolean;
@@ -57,6 +59,7 @@ export class AutomationRepository {
           triggerType,
           triggerConfig,
           promptTemplate,
+          provider: provider ?? 'claude-code',
           model: model ?? null,
           workflowFile,
           enabled: enabled ?? true,
@@ -161,6 +164,7 @@ export class AutomationRepository {
       triggerType: 'event' | 'cron' | 'manual';
       triggerConfig: Record<string, unknown>;
       promptTemplate: string;
+      provider: string;
       model: string | null;
       enabled: boolean;
     }>;

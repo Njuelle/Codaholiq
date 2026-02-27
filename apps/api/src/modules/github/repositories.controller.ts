@@ -18,6 +18,7 @@ import { RequirePermission } from '../../common/decorators/require-permission.de
 import { Permission } from '../permissions/permissions.constants';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { RepositoriesService } from './repositories.service';
+import type { ProviderSecretStatus } from '../providers/provider.types';
 import { ListReposQuerySchema, ListReposQuery } from './dto/list-repos.dto';
 import { UpdateRepoSchema, UpdateRepoDto } from './dto/update-repo.dto';
 import { repositories } from './github.schema';
@@ -62,6 +63,7 @@ export class RepositoriesController {
     secretsConfigured: boolean;
     hasAnthropicKey: boolean;
     hasOAuthToken: boolean;
+    providerSecrets: ProviderSecretStatus[];
   }> {
     return this.repoService.getSetupStatus({ orgId, repoId });
   }

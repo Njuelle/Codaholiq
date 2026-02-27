@@ -215,6 +215,7 @@ export class EventMatcherService {
         payload: this.sanitizePayload(payload),
       },
       resolvedPrompt,
+      provider: automation.provider,
       model: automation.model,
     });
 

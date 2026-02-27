@@ -17,10 +17,7 @@ export function useTriggerAutomation({
 
   return useMutation({
     mutationFn: () =>
-      apiPost<ManualTriggerResponse>(
-        `/orgs/${orgId}/automations/${automationId}/trigger`,
-        {},
-      ),
+      apiPost<ManualTriggerResponse>(`/orgs/${orgId}/automations/${automationId}/trigger`, {}),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.executions.all(orgId),
