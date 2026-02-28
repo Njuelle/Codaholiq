@@ -47,7 +47,7 @@ Layered architecture with strict separation:
 - **Repository** — data access via Drizzle ORM
 - **Processor** — BullMQ job handling (delegates to services)
 
-Each module (`auth`, `organizations`, `github`, `automations`, `executions`, `webhooks`, `permissions`, `audit`, `notifications`, `variables`) owns its schema, repository, service, controller, and DTOs.
+Each module (`auth`, `organizations`, `github`, `automations`, `executions`, `webhooks`, `permissions`, `audit`, `notifications`, `variables`, `providers`) owns its schema, repository, service, controller, and DTOs.
 
 ### Frontend (`apps/web/src/`)
 

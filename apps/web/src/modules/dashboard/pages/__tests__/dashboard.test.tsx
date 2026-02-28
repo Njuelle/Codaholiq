@@ -51,7 +51,19 @@ describe('DashboardPage', () => {
     renderPage();
 
     expect(await screen.findByText('Execution Stats')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '24 Hours' })).toBeInTheDocument();
+    expect(screen.getAllByRole('tab', { name: '24 Hours' }).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should render cost overview card', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Cost Overview')).toBeInTheDocument();
+  });
+
+  it('should render top costliest automations card', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Top Costliest Automations (30d)')).toBeInTheDocument();
   });
 
   it('should show loading skeletons while data is loading', () => {

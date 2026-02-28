@@ -115,7 +115,9 @@ Codaholiq will automatically receive an `installation.created` webhook, create t
 
 ## 9. Add the Workflow Template
 
-Each repository that Codaholiq automates needs a GitHub Actions workflow file. Add this to every target repository:
+Each repository that Codaholiq automates needs a GitHub Actions workflow file. The workflow template supports all providers — it receives `provider`, `prompt`, and `model` inputs via `workflow_dispatch` and routes to the correct action.
+
+Add this to every target repository:
 
 ```bash
 mkdir -p .github/workflows
@@ -125,14 +127,16 @@ curl -o .github/workflows/codaholiq.yml \
 
 Or copy the file from this repository: [`.github/workflows/codaholiq.yml`](../.github/workflows/codaholiq.yml).
 
-The workflow also requires two repository secrets:
+The workflow requires repository secrets depending on your chosen provider(s):
 
-| Secret | Description |
-|--------|-------------|
-| `ANTHROPIC_API_KEY` | Your Anthropic API key for Claude |
-| `CLAUDE_CODE_OAUTH_TOKEN` | OAuth token for Claude Code (optional, for extended capabilities) |
+| Secret | Required For | Description |
+|--------|-------------|-------------|
+| `ANTHROPIC_API_KEY` | Claude Code, OpenCode (Anthropic models) | Anthropic API key |
+| `CLAUDE_CODE_OAUTH_TOKEN` | Claude Code (optional) | OAuth token for extended capabilities |
+| `OPENAI_API_KEY` | OpenAI Codex, OpenCode (OpenAI models) | OpenAI API key |
+| `GEMINI_API_KEY` | Gemini CLI, OpenCode (Google models) | Google Gemini API key |
 
-Set these in each repository under **Settings > Secrets and variables > Actions**.
+You only need to configure secrets for the providers you plan to use. Set these in each repository under **Settings > Secrets and variables > Actions**. The Codaholiq UI shows which secrets are required when selecting a provider during automation creation.
 
 ## Troubleshooting
 

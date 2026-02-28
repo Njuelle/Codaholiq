@@ -11,6 +11,14 @@ interface StatusCounts {
   running: number;
 }
 
+interface CostStats {
+  totalCostMicros: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  executionsWithCost: number;
+  averageCostMicros: number;
+}
+
 interface UpcomingCronTrigger {
   automationId: number;
   automationName: string;
@@ -27,6 +35,25 @@ export interface DashboardStats {
     last7d: StatusCounts;
     last30d: StatusCounts;
   };
+  costStats: {
+    last24h: CostStats;
+    last7d: CostStats;
+    last30d: CostStats;
+  };
+  costByProvider: {
+    provider: string;
+    model: string | null;
+    totalCostMicros: number;
+    count: number;
+  }[];
+  topCostliestAutomations: {
+    automationId: number;
+    automationName: string;
+    totalCostMicros: number;
+    executionCount: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+  }[];
   activeAutomationsCount: number;
   repositoryCount: number;
   upcomingCronTriggers: UpcomingCronTrigger[];
@@ -51,36 +78,126 @@ export class DashboardService {
     const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const [
-      recentExecutions,
-      stats24h,
-      stats7d,
-      stats30d,
-      activeAutomationsCount,
-      repositoryCount,
-      cronAutomations,
-    ] = await Promise.all([
+    const [executionData, costData, orgData] = await Promise.all([
+      this.fetchExecutionStats({ orgId, last24h, last7d, last30d }),
+      this.fetchCostStats({ orgId, last24h, last7d, last30d }),
+      this.fetchOrgData({ orgId }),
+    ]);
+
+    return {
+      recentExecutions: executionData.recentExecutions,
+      executionStats: {
+        last24h: this.aggregateStatusCounts(executionData.stats24h),
+        last7d: this.aggregateStatusCounts(executionData.stats7d),
+        last30d: this.aggregateStatusCounts(executionData.stats30d),
+      },
+      costStats: {
+        last24h: this.toCostStats(costData.cost24h),
+        last7d: this.toCostStats(costData.cost7d),
+        last30d: this.toCostStats(costData.cost30d),
+      },
+      costByProvider: costData.costByProvider,
+      topCostliestAutomations: costData.topCostliestAutomations,
+      activeAutomationsCount: orgData.activeAutomationsCount,
+      repositoryCount: orgData.repositoryCount,
+      upcomingCronTriggers: orgData.upcomingCronTriggers,
+    };
+  }
+
+  private async fetchExecutionStats({
+    orgId,
+    last24h,
+    last7d,
+    last30d,
+  }: {
+    orgId: number;
+    last24h: Date;
+    last7d: Date;
+    last30d: Date;
+  }): Promise<{
+    recentExecutions: DashboardStats['recentExecutions'];
+    stats24h: { status: string; count: number }[];
+    stats7d: { status: string; count: number }[];
+    stats30d: { status: string; count: number }[];
+  }> {
+    const [recentExecutions, stats24h, stats7d, stats30d] = await Promise.all([
       this.executionsService.listRecent({ orgId, limit: 10 }),
       this.executionsService.countByStatusInDateRange({ orgId, since: last24h }),
       this.executionsService.countByStatusInDateRange({ orgId, since: last7d }),
       this.executionsService.countByStatusInDateRange({ orgId, since: last30d }),
+    ]);
+    return { recentExecutions, stats24h, stats7d, stats30d };
+  }
+
+  private async fetchCostStats({
+    orgId,
+    last24h,
+    last7d,
+    last30d,
+  }: {
+    orgId: number;
+    last24h: Date;
+    last7d: Date;
+    last30d: Date;
+  }): Promise<{
+    cost24h: {
+      totalCostMicros: number;
+      totalInputTokens: number;
+      totalOutputTokens: number;
+      executionsWithCost: number;
+    };
+    cost7d: {
+      totalCostMicros: number;
+      totalInputTokens: number;
+      totalOutputTokens: number;
+      executionsWithCost: number;
+    };
+    cost30d: {
+      totalCostMicros: number;
+      totalInputTokens: number;
+      totalOutputTokens: number;
+      executionsWithCost: number;
+    };
+    costByProvider: DashboardStats['costByProvider'];
+    topCostliestAutomations: DashboardStats['topCostliestAutomations'];
+  }> {
+    const [cost24h, cost7d, cost30d, costByProvider, topCostliestAutomations] = await Promise.all([
+      this.executionsService.getCostStats({ orgId, since: last24h }),
+      this.executionsService.getCostStats({ orgId, since: last7d }),
+      this.executionsService.getCostStats({ orgId, since: last30d }),
+      this.executionsService.getCostByProvider({ orgId, since: last30d }),
+      this.executionsService.getTopCostliestAutomations({ orgId, since: last30d, limit: 5 }),
+    ]);
+    return { cost24h, cost7d, cost30d, costByProvider, topCostliestAutomations };
+  }
+
+  private async fetchOrgData({ orgId }: { orgId: number }): Promise<{
+    activeAutomationsCount: number;
+    repositoryCount: number;
+    upcomingCronTriggers: UpcomingCronTrigger[];
+  }> {
+    const [activeAutomationsCount, repositoryCount, cronAutomations] = await Promise.all([
       this.automationService.countByOrgId({ orgId, enabled: true }),
       this.repositoriesService.countByOrgId({ orgId }),
       this.automationService.findCronAutomationsByOrgId({ orgId }),
     ]);
-
-    const upcomingCronTriggers = this.computeUpcomingCrons(cronAutomations);
-
     return {
-      recentExecutions,
-      executionStats: {
-        last24h: this.aggregateStatusCounts(stats24h),
-        last7d: this.aggregateStatusCounts(stats7d),
-        last30d: this.aggregateStatusCounts(stats30d),
-      },
       activeAutomationsCount,
       repositoryCount,
-      upcomingCronTriggers,
+      upcomingCronTriggers: this.computeUpcomingCrons(cronAutomations),
+    };
+  }
+
+  private toCostStats(raw: {
+    totalCostMicros: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    executionsWithCost: number;
+  }): CostStats {
+    return {
+      ...raw,
+      averageCostMicros:
+        raw.executionsWithCost > 0 ? Math.round(raw.totalCostMicros / raw.executionsWithCost) : 0,
     };
   }
 

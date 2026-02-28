@@ -127,9 +127,15 @@ export function mockExecution(overrides?: Partial<Execution>): Execution {
     triggerEvent: null,
     resolvedPrompt: 'Fix the issue in src/main.ts',
     provider: 'claude-code',
+    model: null,
     githubRunId: null,
     githubRunUrl: null,
     errorMessage: null,
+    inputTokens: null,
+    outputTokens: null,
+    totalCostMicros: null,
+    costCurrency: null,
+    costReportedAt: null,
     startedAt: '2025-01-01T00:00:00.000Z',
     completedAt: '2025-01-01T00:01:00.000Z',
     createdAt: '2025-01-01T00:00:00.000Z',
@@ -211,6 +217,14 @@ export function mockAllRolePermissions(
   };
 }
 
+const emptyCostStats = {
+  totalCostMicros: 0,
+  totalInputTokens: 0,
+  totalOutputTokens: 0,
+  executionsWithCost: 0,
+  averageCostMicros: 0,
+};
+
 export function mockDashboardStats(overrides?: Partial<DashboardStats>): DashboardStats {
   return {
     recentExecutions: [
@@ -228,6 +242,13 @@ export function mockDashboardStats(overrides?: Partial<DashboardStats>): Dashboa
       last7d: { total: 50, completed: 42, failed: 5, running: 3 },
       last30d: { total: 200, completed: 180, failed: 15, running: 5 },
     },
+    costStats: {
+      last24h: emptyCostStats,
+      last7d: emptyCostStats,
+      last30d: emptyCostStats,
+    },
+    costByProvider: [],
+    topCostliestAutomations: [],
     activeAutomationsCount: 5,
     repositoryCount: 3,
     upcomingCronTriggers: [

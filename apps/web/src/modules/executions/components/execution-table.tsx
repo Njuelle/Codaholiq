@@ -7,7 +7,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/common/components/ui/table';
-import { formatCompactDate, formatDuration, computeDurationMs } from '@/common/lib/format';
+import {
+  formatCompactDate,
+  formatDuration,
+  computeDurationMs,
+  formatCost,
+} from '@/common/lib/format';
 import type { ExecutionWithAutomation } from '@/common/types';
 import { type KeyboardEvent, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -39,6 +44,7 @@ export function ExecutionTable({ executions, orgId }: ExecutionTableProps): Reac
           <TableHead>Automation</TableHead>
           <TableHead>Created</TableHead>
           <TableHead>Duration</TableHead>
+          <TableHead>Cost</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -66,6 +72,11 @@ export function ExecutionTable({ executions, orgId }: ExecutionTableProps): Reac
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {durationMs !== null ? formatDuration(durationMs) : '-'}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {item.execution.totalCostMicros !== null
+                  ? formatCost(item.execution.totalCostMicros)
+                  : '-'}
               </TableCell>
             </TableRow>
           );

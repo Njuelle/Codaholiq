@@ -1,7 +1,13 @@
 import { StatusBadge } from '@/common/components/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui/card';
 import { isValidGitHubUrl } from '@/modules/executions/lib/execution-utils';
-import { formatDate, formatDuration, computeDurationMs } from '@/common/lib/format';
+import {
+  formatDate,
+  formatDuration,
+  computeDurationMs,
+  formatCost,
+  formatTokens,
+} from '@/common/lib/format';
 import { useProviders } from '@/modules/automations/hooks/use-providers';
 import type { Execution } from '@/common/types';
 import { ExternalLink } from 'lucide-react';
@@ -61,6 +67,22 @@ export function ExecutionInfoCard({
             <p className="text-sm text-muted-foreground">Created</p>
             <p className="text-sm font-medium">{formatDate(execution.createdAt)}</p>
           </div>
+          {execution.totalCostMicros !== null && (
+            <div>
+              <p className="text-sm text-muted-foreground">Cost</p>
+              <p className="text-sm font-medium">{formatCost(execution.totalCostMicros)}</p>
+            </div>
+          )}
+          {(execution.inputTokens !== null || execution.outputTokens !== null) && (
+            <div>
+              <p className="text-sm text-muted-foreground">Tokens</p>
+              <p className="text-sm font-medium">
+                {execution.inputTokens !== null && `${formatTokens(execution.inputTokens)} in`}
+                {execution.inputTokens !== null && execution.outputTokens !== null && ' / '}
+                {execution.outputTokens !== null && `${formatTokens(execution.outputTokens)} out`}
+              </p>
+            </div>
+          )}
         </div>
 
         {execution.githubRunUrl && isValidGitHubUrl(execution.githubRunUrl) && (

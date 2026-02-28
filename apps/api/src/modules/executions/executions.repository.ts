@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, desc, gt, count, sql } from 'drizzle-orm';
+import { eq, and, desc, gt, count, sum, sql, isNotNull } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../../database/database.module';
 import * as schema from '../../database/schema';
@@ -347,6 +347,144 @@ export class ExecutionRepository {
         ),
       );
     return Number(row.count);
+  }
+
+  async updateCost({
+    executionId,
+    inputTokens,
+    outputTokens,
+    totalCostMicros,
+  }: {
+    executionId: number;
+    inputTokens: number | null;
+    outputTokens: number | null;
+    totalCostMicros: number | null;
+  }): Promise<void> {
+    await this.db
+      .update(executions)
+      .set({
+        inputTokens,
+        outputTokens,
+        ...(totalCostMicros !== null ? { totalCostMicros, costCurrency: 'USD' as const } : {}),
+        costReportedAt: new Date(),
+      })
+      .where(eq(executions.id, executionId));
+  }
+
+  async sumCostInDateRange({ orgId, since }: { orgId: number; since: Date }): Promise<{
+    totalCostMicros: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    executionsWithCost: number;
+  }> {
+    const [row] = await this.db
+      .select({
+        totalCostMicros: sum(executions.totalCostMicros),
+        totalInputTokens: sum(executions.inputTokens),
+        totalOutputTokens: sum(executions.outputTokens),
+        executionsWithCost: count(executions.totalCostMicros),
+      })
+      .from(executions)
+      .innerJoin(automations, eq(executions.automationId, automations.id))
+      .where(
+        and(
+          eq(automations.orgId, orgId),
+          gt(executions.createdAt, since),
+          isNotNull(executions.totalCostMicros),
+        ),
+      );
+
+    return {
+      totalCostMicros: Number(row.totalCostMicros ?? 0),
+      totalInputTokens: Number(row.totalInputTokens ?? 0),
+      totalOutputTokens: Number(row.totalOutputTokens ?? 0),
+      executionsWithCost: Number(row.executionsWithCost),
+    };
+  }
+
+  async sumCostByProviderInDateRange({
+    orgId,
+    since,
+  }: {
+    orgId: number;
+    since: Date;
+  }): Promise<
+    { provider: string; model: string | null; totalCostMicros: number; count: number }[]
+  > {
+    const rows = await this.db
+      .select({
+        provider: executions.provider,
+        model: executions.model,
+        totalCostMicros: sum(executions.totalCostMicros),
+        count: count(),
+      })
+      .from(executions)
+      .innerJoin(automations, eq(executions.automationId, automations.id))
+      .where(
+        and(
+          eq(automations.orgId, orgId),
+          gt(executions.createdAt, since),
+          isNotNull(executions.totalCostMicros),
+        ),
+      )
+      .groupBy(executions.provider, executions.model);
+
+    return rows.map((r) => ({
+      provider: r.provider,
+      model: r.model,
+      totalCostMicros: Number(r.totalCostMicros ?? 0),
+      count: Number(r.count),
+    }));
+  }
+
+  async topCostliestAutomations({
+    orgId,
+    since,
+    limit,
+  }: {
+    orgId: number;
+    since: Date;
+    limit: number;
+  }): Promise<
+    {
+      automationId: number;
+      automationName: string;
+      totalCostMicros: number;
+      executionCount: number;
+      totalInputTokens: number;
+      totalOutputTokens: number;
+    }[]
+  > {
+    const rows = await this.db
+      .select({
+        automationId: executions.automationId,
+        automationName: automations.name,
+        totalCostMicros: sum(executions.totalCostMicros),
+        executionCount: count(),
+        totalInputTokens: sum(executions.inputTokens),
+        totalOutputTokens: sum(executions.outputTokens),
+      })
+      .from(executions)
+      .innerJoin(automations, eq(executions.automationId, automations.id))
+      .where(
+        and(
+          eq(automations.orgId, orgId),
+          gt(executions.createdAt, since),
+          isNotNull(executions.totalCostMicros),
+        ),
+      )
+      .groupBy(executions.automationId, automations.name)
+      .orderBy(desc(sum(executions.totalCostMicros)))
+      .limit(limit);
+
+    return rows.map((r) => ({
+      automationId: r.automationId,
+      automationName: r.automationName,
+      totalCostMicros: Number(r.totalCostMicros ?? 0),
+      executionCount: Number(r.executionCount),
+      totalInputTokens: Number(r.totalInputTokens ?? 0),
+      totalOutputTokens: Number(r.totalOutputTokens ?? 0),
+    }));
   }
 
   async deleteLogsOlderThan({ days }: { days: number }): Promise<number> {

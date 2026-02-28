@@ -53,4 +53,63 @@ describe('ExecutionInfoCard', () => {
     const link = screen.getByRole('link', { name: 'Bot' });
     expect(link).toHaveAttribute('href', '/orgs/1/automations/5');
   });
+
+  it('should show cost when totalCostMicros is present', () => {
+    const execution = mockExecution({ totalCostMicros: 2_500_000 });
+
+    renderWithProviders(<ExecutionInfoCard execution={execution} automationName="Bot" orgId={1} />);
+
+    expect(screen.getByText('Cost')).toBeInTheDocument();
+    expect(screen.getByText('$2.50')).toBeInTheDocument();
+  });
+
+  it('should show token breakdown when tokens are present', () => {
+    const execution = mockExecution({
+      totalCostMicros: 1_000_000,
+      inputTokens: 150_000,
+      outputTokens: 25_000,
+    });
+
+    renderWithProviders(<ExecutionInfoCard execution={execution} automationName="Bot" orgId={1} />);
+
+    expect(screen.getByText('Tokens')).toBeInTheDocument();
+    expect(screen.getByText(/150\.0K in/)).toBeInTheDocument();
+    expect(screen.getByText(/25\.0K/)).toBeInTheDocument();
+  });
+
+  it('should not show cost section when totalCostMicros is null', () => {
+    const execution = mockExecution({ totalCostMicros: null });
+
+    renderWithProviders(<ExecutionInfoCard execution={execution} automationName="Bot" orgId={1} />);
+
+    expect(screen.queryByText('Cost')).not.toBeInTheDocument();
+  });
+
+  it('should show only input tokens when outputTokens is null', () => {
+    const execution = mockExecution({
+      totalCostMicros: 500_000,
+      inputTokens: 80_000,
+      outputTokens: null,
+    });
+
+    renderWithProviders(<ExecutionInfoCard execution={execution} automationName="Bot" orgId={1} />);
+
+    expect(screen.getByText('Tokens')).toBeInTheDocument();
+    expect(screen.getByText(/80\.0K in/)).toBeInTheDocument();
+    expect(screen.queryByText(/out/)).not.toBeInTheDocument();
+  });
+
+  it('should show only output tokens when inputTokens is null', () => {
+    const execution = mockExecution({
+      totalCostMicros: 500_000,
+      inputTokens: null,
+      outputTokens: 12_000,
+    });
+
+    renderWithProviders(<ExecutionInfoCard execution={execution} automationName="Bot" orgId={1} />);
+
+    expect(screen.getByText('Tokens')).toBeInTheDocument();
+    expect(screen.getByText(/12\.0K out/)).toBeInTheDocument();
+    expect(screen.queryByText(/in/)).not.toBeInTheDocument();
+  });
 });

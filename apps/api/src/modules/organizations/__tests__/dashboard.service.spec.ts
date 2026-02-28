@@ -3,10 +3,20 @@ import type { ExecutionsService } from '../../executions/executions.service';
 import type { AutomationService } from '../../automations/automations.service';
 import type { RepositoriesService } from '../../github/repositories.service';
 
+const emptyCostResult = {
+  totalCostMicros: 0,
+  totalInputTokens: 0,
+  totalOutputTokens: 0,
+  executionsWithCost: 0,
+};
+
 function createMockExecutionsService() {
   return {
     listRecent: vi.fn().mockResolvedValue([]),
     countByStatusInDateRange: vi.fn().mockResolvedValue([]),
+    getCostStats: vi.fn().mockResolvedValue(emptyCostResult),
+    getCostByProvider: vi.fn().mockResolvedValue([]),
+    getTopCostliestAutomations: vi.fn().mockResolvedValue([]),
   };
 }
 

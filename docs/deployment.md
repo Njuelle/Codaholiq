@@ -31,6 +31,21 @@ cp .env.example .env
 | `DB_POOL_MAX` | `20` | PostgreSQL connection pool max size |
 | `NODE_ENV` | `development` | Set to `production` for production deployments |
 
+### AI Provider Secrets
+
+AI provider API keys are **not** Codaholiq application environment variables. They are configured as **GitHub repository secrets** on each repository that runs automations. Codaholiq itself does not store or proxy API keys — the GitHub Actions workflow accesses them directly from repository secrets at runtime.
+
+Each provider requires specific repository secrets:
+
+| Provider | Required Secrets | Notes |
+|----------|-----------------|-------|
+| **Claude Code** | `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN` (optional) | Default provider |
+| **OpenAI Codex** | `OPENAI_API_KEY` | Required |
+| **Gemini CLI** | `GEMINI_API_KEY` | Required |
+| **OpenCode** | Depends on model: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` | Only the key for the selected model's provider is needed |
+
+Set these in each repository under **Settings > Secrets and variables > Actions**. The Codaholiq UI shows which secrets are needed when selecting a provider during automation creation.
+
 ### Generating Secrets
 
 ```bash
@@ -221,4 +236,5 @@ The included GitHub Actions pipeline (`.github/workflows/ci.yml`) runs on every 
 - [ ] Migrations applied before starting the application
 - [ ] GitHub App webhook URL points to production domain
 - [ ] Log aggregation configured (API outputs structured JSON via Pino)
+- [ ] Provider API keys configured as GitHub repository secrets on each target repository
 - [ ] Monitoring/alerting on `/health/ready` endpoint

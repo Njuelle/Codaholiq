@@ -1,4 +1,10 @@
-import { formatDuration, computeDurationMs, formatRelativeTime } from '../format';
+import {
+  formatDuration,
+  computeDurationMs,
+  formatRelativeTime,
+  formatCost,
+  formatTokens,
+} from '../format';
 
 describe('formatDuration', () => {
   it('should return "-" for zero or negative', () => {
@@ -84,5 +90,52 @@ describe('formatRelativeTime', () => {
   it('should return "just now" for future timestamps', () => {
     const future = new Date(Date.now() + 60_000).toISOString();
     expect(formatRelativeTime(future)).toBe('just now');
+  });
+});
+
+describe('formatCost', () => {
+  it('should format zero', () => {
+    expect(formatCost(0)).toBe('$0.00');
+  });
+
+  it('should format sub-cent values', () => {
+    expect(formatCost(4200)).toBe('< $0.01');
+    expect(formatCost(1)).toBe('< $0.01');
+    expect(formatCost(9999)).toBe('< $0.01');
+  });
+
+  it('should format fractional dollar values', () => {
+    expect(formatCost(100_000)).toBe('$0.10');
+    expect(formatCost(500_000)).toBe('$0.50');
+    expect(formatCost(42_000)).toBe('$0.042');
+  });
+
+  it('should format whole dollar amounts', () => {
+    expect(formatCost(1_000_000)).toBe('$1.00');
+    expect(formatCost(1_230_000)).toBe('$1.23');
+    expect(formatCost(99_990_000)).toBe('$99.99');
+  });
+
+  it('should treat negative values as zero', () => {
+    expect(formatCost(-1)).toBe('$0.00');
+    expect(formatCost(-500_000)).toBe('$0.00');
+  });
+});
+
+describe('formatTokens', () => {
+  it('should format small counts', () => {
+    expect(formatTokens(0)).toBe('0');
+    expect(formatTokens(999)).toBe('999');
+  });
+
+  it('should format thousands', () => {
+    expect(formatTokens(1_000)).toBe('1.0K');
+    expect(formatTokens(12_500)).toBe('12.5K');
+    expect(formatTokens(999_999)).toBe('1000.0K');
+  });
+
+  it('should format millions', () => {
+    expect(formatTokens(1_000_000)).toBe('1.0M');
+    expect(formatTokens(5_500_000)).toBe('5.5M');
   });
 });

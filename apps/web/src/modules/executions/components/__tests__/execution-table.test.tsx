@@ -68,6 +68,42 @@ describe('ExecutionTable', () => {
     expect(screen.getByText('Automation')).toBeInTheDocument();
     expect(screen.getByText('Created')).toBeInTheDocument();
     expect(screen.getByText('Duration')).toBeInTheDocument();
+    expect(screen.getByText('Cost')).toBeInTheDocument();
+  });
+
+  it('should show formatted cost when available', () => {
+    const executionsWithCost: ExecutionWithAutomation[] = [
+      {
+        execution: mockExecution({ id: 10, totalCostMicros: 1_500_000 }),
+        automationName: 'Costly Bot',
+      },
+    ];
+
+    render(
+      <MemoryRouter>
+        <ExecutionTable executions={executionsWithCost} orgId={1} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('$1.50')).toBeInTheDocument();
+  });
+
+  it('should show dash when cost is null', () => {
+    const executionsNoCost: ExecutionWithAutomation[] = [
+      {
+        execution: mockExecution({ id: 11, totalCostMicros: null }),
+        automationName: 'Free Bot',
+      },
+    ];
+
+    render(
+      <MemoryRouter>
+        <ExecutionTable executions={executionsNoCost} orgId={1} />
+      </MemoryRouter>,
+    );
+
+    const dashes = screen.getAllByText('-');
+    expect(dashes.length).toBeGreaterThanOrEqual(1);
   });
 
   it('should navigate to execution detail on row click', async () => {

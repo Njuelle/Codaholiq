@@ -7,6 +7,30 @@ export interface StatusCounts {
   readonly running: number;
 }
 
+export interface CostStats {
+  readonly totalCostMicros: number;
+  readonly totalInputTokens: number;
+  readonly totalOutputTokens: number;
+  readonly executionsWithCost: number;
+  readonly averageCostMicros: number;
+}
+
+export interface ProviderCostBreakdown {
+  readonly provider: string;
+  readonly model: string | null;
+  readonly totalCostMicros: number;
+  readonly count: number;
+}
+
+export interface AutomationCostBreakdown {
+  readonly automationId: number;
+  readonly automationName: string;
+  readonly totalCostMicros: number;
+  readonly executionCount: number;
+  readonly totalInputTokens: number;
+  readonly totalOutputTokens: number;
+}
+
 export interface ExecutionSummary {
   readonly execution: {
     readonly id: number;
@@ -29,6 +53,13 @@ export interface DashboardStats {
     readonly last7d: StatusCounts;
     readonly last30d: StatusCounts;
   };
+  readonly costStats: {
+    readonly last24h: CostStats;
+    readonly last7d: CostStats;
+    readonly last30d: CostStats;
+  };
+  readonly costByProvider: readonly ProviderCostBreakdown[];
+  readonly topCostliestAutomations: readonly AutomationCostBreakdown[];
   readonly activeAutomationsCount: number;
   readonly repositoryCount: number;
   readonly upcomingCronTriggers: readonly UpcomingCronTrigger[];

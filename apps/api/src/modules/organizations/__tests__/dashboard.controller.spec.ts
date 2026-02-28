@@ -22,6 +22,14 @@ const mockOrgGuard: CanActivate = {
   },
 };
 
+const emptyCostStats = {
+  totalCostMicros: 0,
+  totalInputTokens: 0,
+  totalOutputTokens: 0,
+  executionsWithCost: 0,
+  averageCostMicros: 0,
+};
+
 function makeStats(overrides: Partial<DashboardStats> = {}): DashboardStats {
   return {
     recentExecutions: [],
@@ -30,6 +38,13 @@ function makeStats(overrides: Partial<DashboardStats> = {}): DashboardStats {
       last7d: { total: 0, completed: 0, failed: 0, running: 0 },
       last30d: { total: 0, completed: 0, failed: 0, running: 0 },
     },
+    costStats: {
+      last24h: emptyCostStats,
+      last7d: emptyCostStats,
+      last30d: emptyCostStats,
+    },
+    costByProvider: [],
+    topCostliestAutomations: [],
     activeAutomationsCount: 0,
     repositoryCount: 0,
     upcomingCronTriggers: [],

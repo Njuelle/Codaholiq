@@ -63,4 +63,5 @@ export interface CollectLogsJobData {
   readonly installationId: number;
   readonly owner: string;
   readonly repo: string;
+  readonly provider?: string;
 }

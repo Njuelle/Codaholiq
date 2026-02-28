@@ -3,11 +3,11 @@
 </p>
 
 <p align="center">
-  <strong>GitHub automations powered by Claude Code</strong>
+  <strong>AI automations governance platform for GitHub</strong>
 </p>
 
 <p align="center">
-  Define triggers. Write prompts. Let AI handle the rest.
+  Define triggers. Choose your AI provider. Control costs. Ship faster.
 </p>
 
 <p align="center">
@@ -23,10 +23,12 @@
 
 ## What is Codaholiq?
 
-Codaholiq is a platform that lets you create AI-powered automations for your GitHub repositories. Connect your repos, configure triggers (webhooks, cron schedules, or manual dispatch), write prompt templates, and Codaholiq dispatches GitHub Actions workflows that invoke the [Claude Code GitHub Action](https://github.com/anthropics/claude-code-action). Every execution is tracked with real-time log streaming.
+Codaholiq is an AI automations governance platform for your GitHub repositories. Connect your repos, choose an AI provider — [Claude Code](https://github.com/anthropics/claude-code-action), [OpenAI Codex](https://github.com/openai/codex-action), [Gemini CLI](https://github.com/google-github-actions/run-gemini-cli), or [OpenCode](https://opencode.ai/) with 75+ models — configure triggers (webhooks, cron schedules, or manual dispatch), and write prompt templates. Codaholiq dispatches GitHub Actions workflows to the provider of your choice, tracks every execution with real-time log streaming, and gives you full cost visibility with per-execution token and dollar cost analytics.
 
 ## Features
 
+- **Multi-provider support** — run automations with [Claude Code](https://github.com/anthropics/claude-code-action) (Anthropic), [OpenAI Codex](https://github.com/openai/codex-action), [Gemini CLI](https://github.com/google-github-actions/run-gemini-cli) (Google), or [OpenCode](https://opencode.ai/) (75+ models across Anthropic, OpenAI, Google, DeepSeek). Select provider and model per automation.
+- **Cost tracking & analytics** — automatic cost extraction from workflow logs, per-execution token counts and dollar costs, dashboard with cost overview (24h/7d/30d), cost-by-provider breakdown, and top costliest automations
 - **Trigger on anything** — GitHub events (push, PR, issues, workflow runs), cron schedules, or manual dispatch
 - **Trigger conditions** — filter events with fine-grained conditions using dot-notation payload paths (e.g., only run on pushes to `main`, PRs with a specific label). Supports `equals`, `contains`, `starts_with`, `matches` (regex), and more — combine groups with AND/OR logic
 - **Prompt templates** — `{{variable}}` syntax with built-in context variables from event payloads
@@ -36,7 +38,7 @@ Codaholiq is a platform that lets you create AI-powered automations for your Git
 
 ## How it Works
 
-When a GitHub event (push, PR, issue, etc.) arrives, Codaholiq matches it against your configured automations, renders the prompt template with context from the event payload, and dispatches a GitHub Actions workflow running the Claude Code Action. The execution is tracked end-to-end with real-time log streaming back to the dashboard.
+When a GitHub event (push, PR, issue, etc.) arrives, Codaholiq matches it against your configured automations, renders the prompt template with context from the event payload, and dispatches a GitHub Actions workflow to your selected AI provider. The execution is tracked end-to-end with real-time log streaming and cost analytics back to the dashboard.
 
 ### Creating an Automation
 
@@ -56,9 +58,13 @@ For full control, choose **Custom Automation** and walk through the step-by-step
 
 ![Step 2 — Trigger](docs/screenshots/create%20automation%202.png)
 
-**3. Prompt** — Write your template with `{{variable}}` placeholders from the event payload.
+**3. Provider & Model** — Choose your AI provider and model. Each provider shows its available models and required repository secrets.
 
-![Step 3 — Prompt](docs/screenshots/create%20automation%203.png)
+<!-- TODO: add screenshot for provider/model step -->
+
+**4. Prompt** — Write your template with `{{variable}}` placeholders from the event payload.
+
+![Step 4 — Prompt](docs/screenshots/create%20automation%203.png)
 
 ## Quick Start
 

@@ -8,6 +8,7 @@ All protected endpoints require a Bearer token in the `Authorization` header. Or
 
 - [Global Configuration](#global-configuration)
 - [Health](#health)
+- [Providers](#providers)
 - [Auth](#auth)
 - [Organizations](#organizations)
 - [Dashboard](#dashboard)
@@ -111,6 +112,91 @@ Checks database, Redis, and GitHub API connectivity. Returns `200` if all checks
   }
 }
 ```
+
+---
+
+## Providers
+
+Public endpoints for listing supported AI providers and their models. No authentication required.
+
+### `GET /providers`
+
+List all supported AI providers, their models, and secret requirements.
+
+**Response** `200`:
+```json
+{
+  "providers": [
+    {
+      "id": "claude-code",
+      "name": "Claude Code",
+      "description": "Anthropic Claude Code Action — agentic coding with Claude models",
+      "models": [
+        { "id": "claude-sonnet-4-5-20250929", "name": "Claude Sonnet 4.5", "description": "Balanced speed and capability" },
+        { "id": "claude-opus-4-6", "name": "Claude Opus 4.6", "description": "Most capable, best for complex tasks" },
+        { "id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "description": "Fastest and most cost-effective" }
+      ],
+      "defaultModelId": "claude-sonnet-4-5-20250929",
+      "secrets": [
+        { "name": "ANTHROPIC_API_KEY", "required": false, "description": "Anthropic API key" },
+        { "name": "CLAUDE_CODE_OAUTH_TOKEN", "required": false, "description": "Claude Code OAuth token" }
+      ]
+    },
+    {
+      "id": "opencode",
+      "name": "OpenCode",
+      "description": "Multi-provider AI coding agent supporting 75+ models",
+      "models": [
+        { "id": "anthropic/claude-sonnet-4-20250514", "name": "Claude Sonnet 4 (via OpenCode)", "description": "..." },
+        { "id": "openai/gpt-4.1", "name": "GPT-4.1 (via OpenCode)", "description": "..." },
+        { "id": "google/gemini-2.5-pro", "name": "Gemini 2.5 Pro (via OpenCode)", "description": "..." },
+        { "id": "deepseek/deepseek-chat", "name": "DeepSeek Chat (via OpenCode)", "description": "..." }
+      ],
+      "defaultModelId": "anthropic/claude-sonnet-4-20250514",
+      "secrets": [
+        { "name": "ANTHROPIC_API_KEY", "required": false, "description": "Required for Anthropic models" },
+        { "name": "OPENAI_API_KEY", "required": false, "description": "Required for OpenAI models" },
+        { "name": "GEMINI_API_KEY", "required": false, "description": "Required for Google models" }
+      ]
+    },
+    {
+      "id": "codex",
+      "name": "OpenAI Codex",
+      "description": "OpenAI Codex coding agent",
+      "models": [
+        { "id": "codex-mini", "name": "Codex Mini", "description": "Fast and cost-effective" },
+        { "id": "o4-mini", "name": "o4-mini", "description": "General purpose reasoning model" }
+      ],
+      "defaultModelId": "codex-mini",
+      "secrets": [
+        { "name": "OPENAI_API_KEY", "required": true, "description": "OpenAI API key" }
+      ]
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini CLI",
+      "description": "Google Gemini CLI for GitHub Actions",
+      "models": [
+        { "id": "gemini-2.5-pro", "name": "Gemini 2.5 Pro", "description": "Most capable Gemini model" },
+        { "id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "description": "Fast and efficient" }
+      ],
+      "defaultModelId": "gemini-2.5-pro",
+      "secrets": [
+        { "name": "GEMINI_API_KEY", "required": true, "description": "Google Gemini API key" }
+      ]
+    }
+  ],
+  "defaultProviderId": "claude-code"
+}
+```
+
+### `GET /providers/:providerId`
+
+Get a single provider by ID.
+
+**Response** `200`: a single provider object (same shape as one element of the `providers` array above).
+
+**Response** `404`: if the provider ID is not recognized.
 
 ---
 
@@ -253,7 +339,54 @@ Get dashboard statistics for the organization.
 
 **Required permission**: org membership
 
-**Response** `200`: `DashboardStats` (execution counts by status, automation counts, etc.)
+**Response** `200`:
+```json
+{
+  "recentExecutions": [
+    {
+      "execution": { "id": 1, "status": "completed", "createdAt": "2025-01-01T00:00:00Z" },
+      "automationName": "Auto-review PRs"
+    }
+  ],
+  "executionStats": {
+    "last24h": { "total": 15, "completed": 12, "failed": 2, "running": 1 },
+    "last7d": { "total": 87, "completed": 72, "failed": 10, "running": 5 },
+    "last30d": { "total": 350, "completed": 300, "failed": 40, "running": 10 }
+  },
+  "costStats": {
+    "last24h": {
+      "totalCostMicros": 1230000,
+      "totalInputTokens": 45000,
+      "totalOutputTokens": 12000,
+      "executionsWithCost": 10,
+      "averageCostMicros": 123000
+    },
+    "last7d": { "..." : "..." },
+    "last30d": { "..." : "..." }
+  },
+  "costByProvider": [
+    { "provider": "claude-code", "model": "claude-sonnet-4-5-20250929", "totalCostMicros": 980000, "count": 8 },
+    { "provider": "codex", "model": "codex-mini", "totalCostMicros": 250000, "count": 2 }
+  ],
+  "topCostliestAutomations": [
+    {
+      "automationId": 1,
+      "automationName": "Auto-review PRs",
+      "totalCostMicros": 550000,
+      "executionCount": 5,
+      "totalInputTokens": 25000,
+      "totalOutputTokens": 8000
+    }
+  ],
+  "activeAutomationsCount": 12,
+  "repositoryCount": 5,
+  "upcomingCronTriggers": [
+    { "automationId": 3, "automationName": "Nightly lint", "nextFireAt": "2025-01-02T02:00:00Z" }
+  ]
+}
+```
+
+Cost values are stored in **microdollars** (1,000,000 = $1.00 USD). Divide by 1,000,000 for display.
 
 ---
 
@@ -340,9 +473,11 @@ Create a new automation.
 ```json
 {
   "name": "Auto-review PRs",
-  "description": "Reviews pull requests using Claude Code",
+  "description": "Reviews pull requests using AI",
   "enabled": true,
   "repositoryId": 1,
+  "provider": "claude-code",
+  "model": "claude-sonnet-4-5-20250929",
   "trigger": {
     "type": "event",
     "events": ["pull_request.opened"],
@@ -356,6 +491,8 @@ Create a new automation.
   ]
 }
 ```
+
+The `provider` field defaults to `claude-code` if omitted. Must be one of: `claude-code`, `opencode`, `codex`, `gemini`. The `model` field is optional — if omitted, the provider's default model is used. See `GET /providers` for available providers and models.
 
 **Response** `201`: the created automation with variables.
 
@@ -383,7 +520,7 @@ Update an automation. All fields are optional.
 
 **Required permission**: `automations.edit`
 
-**Body:** same shape as create, all fields optional.
+**Body:** same shape as create, all fields optional (including `provider` and `model`).
 
 **Response** `200`: the updated automation.
 
@@ -487,10 +624,18 @@ List executions with optional filters.
         "automationId": 1,
         "status": "completed",
         "resolvedPrompt": "...",
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-5-20250929",
         "githubRunId": 12345,
         "githubRunUrl": "https://github.com/...",
+        "inputTokens": 5432,
+        "outputTokens": 1234,
+        "totalCostMicros": 123000,
+        "costCurrency": "USD",
+        "costReportedAt": "2025-01-01T00:05:00Z",
         "startedAt": "...",
-        "completedAt": "..."
+        "completedAt": "...",
+        "createdAt": "..."
       },
       "automationName": "Auto-review PRs"
     }
@@ -499,13 +644,15 @@ List executions with optional filters.
 }
 ```
 
+Cost fields (`inputTokens`, `outputTokens`, `totalCostMicros`, `costReportedAt`) are `null` until the execution completes and costs are extracted from workflow logs. Some providers (e.g. Gemini) may report tokens but not dollar costs.
+
 ### `GET /orgs/:orgId/executions/:executionId`
 
 Get a single execution with its automation name.
 
 **Required permission**: `executions.view` | **Rate limit**: 200/min
 
-**Response** `200`: `{ execution, automationName }`
+**Response** `200`: `{ execution, automationName }` — execution includes all fields above.
 
 ### `GET /orgs/:orgId/executions/:executionId/logs`
 
@@ -761,11 +908,9 @@ Delete a shared variable.
 
 ### `GET /workflow-template`
 
-**Public** (no auth required). Returns the GitHub Actions workflow YAML template that users should add to their repositories.
+**Public** (no auth required). Returns the GitHub Actions workflow YAML template that users should add to their repositories. The template supports all providers via conditional steps — see [the workflow template file](../.github/workflows/codaholiq.yml) for the full YAML.
 
 **Response** `200`:
 ```json
 { "template": "# .github/workflows/codaholiq.yml\nname: Codaholiq\n..." }
 ```
-
-See [the workflow template file](../.github/workflows/codaholiq.yml) for the full YAML.

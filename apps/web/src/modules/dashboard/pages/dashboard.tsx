@@ -1,6 +1,8 @@
+import { CostStatsCard } from '@/modules/dashboard/components/cost-stats-card';
 import { ExecutionStatsTabs } from '@/modules/dashboard/components/execution-stats-tabs';
 import { RecentExecutionsList } from '@/modules/dashboard/components/recent-executions-list';
 import { StatsCards } from '@/modules/dashboard/components/stats-cards';
+import { TopCostliestAutomationsCard } from '@/modules/dashboard/components/top-costliest-automations-card';
 import { UpcomingCronsCard } from '@/modules/dashboard/components/upcoming-crons-card';
 import { PageHeader } from '@/common/components/page-header';
 import { Skeleton } from '@/common/components/ui/skeleton';
@@ -52,8 +54,12 @@ export function DashboardPage(): ReactElement {
       <StatsCards stats={stats} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <RecentExecutionsList executions={stats.recentExecutions} orgId={orgId} />
         <div className="space-y-6">
+          <RecentExecutionsList executions={stats.recentExecutions} orgId={orgId} />
+          <TopCostliestAutomationsCard automations={stats.topCostliestAutomations} orgId={orgId} />
+        </div>
+        <div className="space-y-6">
+          <CostStatsCard costStats={stats.costStats} />
           <ExecutionStatsTabs stats={stats.executionStats} />
           <UpcomingCronsCard triggers={stats.upcomingCronTriggers} orgId={orgId} />
         </div>

@@ -25,6 +25,7 @@ function createMockExecutionRepository() {
       .mockImplementation(({ logs }: { logs: unknown[] }) =>
         Promise.resolve(logs.map((_, i) => ({ id: i + 1 }))),
       ),
+    updateCost: vi.fn().mockResolvedValue(undefined),
     deleteLogsOlderThan: vi.fn().mockResolvedValue(10),
     deleteExecutionsOlderThan: vi.fn().mockResolvedValue(5),
   };
@@ -81,6 +82,7 @@ function makeCollectLogsJob(overrides: Partial<CollectLogsJobData> = {}): Job<Co
     installationId: 9001,
     owner: 'acme',
     repo: 'widgets',
+    provider: 'claude-code',
     ...overrides,
   };
   return { name: 'collect-logs', data } as Job<CollectLogsJobData>;
@@ -248,7 +250,7 @@ describe('ExecutionProcessor', () => {
   describe('poll-status', () => {
     it('should update execution to completed when workflow succeeds', async () => {
       executionRepo.findById.mockResolvedValue({
-        execution: { id: 1, status: 'running' },
+        execution: { id: 1, status: 'running', provider: 'claude-code' },
         automationName: 'test',
       });
       githubApi.getWorkflowRun.mockResolvedValue({
@@ -396,6 +398,61 @@ describe('ExecutionProcessor', () => {
           },
         ],
       });
+    });
+
+    it('should extract and store cost when log contains cost data', async () => {
+      const zip = new AdmZip();
+      zip.addFile('step1/log.txt', Buffer.from('Running...\nTotal cost:            $0.55\nDone.'));
+      const zipBuffer = zip.toBuffer();
+
+      githubApi.getWorkflowRunLogs.mockResolvedValue(toArrayBuffer(zipBuffer));
+
+      await processor.process(makeCollectLogsJob({ provider: 'claude-code' }));
+
+      expect(executionRepo.updateCost).toHaveBeenCalledWith({
+        executionId: 1,
+        inputTokens: null,
+        outputTokens: null,
+        totalCostMicros: 550_000,
+      });
+    });
+
+    it('should not call updateCost when no cost data found', async () => {
+      const zip = new AdmZip();
+      zip.addFile('step1/log.txt', Buffer.from('No cost info here'));
+      const zipBuffer = zip.toBuffer();
+
+      githubApi.getWorkflowRunLogs.mockResolvedValue(toArrayBuffer(zipBuffer));
+
+      await processor.process(makeCollectLogsJob({ provider: 'claude-code' }));
+
+      expect(executionRepo.updateCost).not.toHaveBeenCalled();
+    });
+
+    it('should not break log collection when cost extraction fails', async () => {
+      const zip = new AdmZip();
+      zip.addFile('step1/log.txt', Buffer.from('Total cost:            $0.55'));
+      const zipBuffer = zip.toBuffer();
+
+      githubApi.getWorkflowRunLogs.mockResolvedValue(toArrayBuffer(zipBuffer));
+      executionRepo.updateCost.mockRejectedValue(new Error('DB error'));
+
+      await processor.process(makeCollectLogsJob({ provider: 'claude-code' }));
+
+      // Log storage should still succeed despite cost update failure
+      expect(executionRepo.appendLogs).toHaveBeenCalled();
+    });
+
+    it('should skip cost extraction when provider is not set', async () => {
+      const zip = new AdmZip();
+      zip.addFile('step1/log.txt', Buffer.from('Total cost:            $0.55'));
+      const zipBuffer = zip.toBuffer();
+
+      githubApi.getWorkflowRunLogs.mockResolvedValue(toArrayBuffer(zipBuffer));
+
+      await processor.process(makeCollectLogsJob({ provider: undefined }));
+
+      expect(executionRepo.updateCost).not.toHaveBeenCalled();
     });
 
     it('should log error when log collection fails', async () => {

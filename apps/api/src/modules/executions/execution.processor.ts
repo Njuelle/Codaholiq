@@ -3,6 +3,7 @@ import { Inject, Logger } from '@nestjs/common';
 import { Job, Queue } from 'bullmq';
 import AdmZip from 'adm-zip';
 import { ExecutionRepository } from './executions.repository';
+import { extractCostFromLogs } from './cost-extractor';
 import { GitHubApiService } from '../github/github-api.service';
 import { NotificationRepository } from '../notifications/notifications.repository';
 import { RedisLogPublisherService } from './redis-log-publisher.service';
@@ -235,7 +236,7 @@ export class ExecutionProcessor extends WorkerHost {
         `Execution ${executionId}: workflow completed with conclusion: ${run.conclusion}`,
       );
 
-      // Queue log collection
+      // Queue log collection (include provider for cost extraction)
       await this.executionQueue.add(
         COLLECT_LOGS_JOB,
         {
@@ -244,6 +245,7 @@ export class ExecutionProcessor extends WorkerHost {
           installationId,
           owner,
           repo,
+          provider: result.execution.provider,
         } satisfies CollectLogsJobData,
         DEFAULT_JOB_OPTIONS,
       );
@@ -261,7 +263,7 @@ export class ExecutionProcessor extends WorkerHost {
   }
 
   private async handleCollectLogs(job: Job<CollectLogsJobData>): Promise<void> {
-    const { executionId, githubRunId, installationId, owner, repo } = job.data;
+    const { executionId, githubRunId, installationId, owner, repo, provider } = job.data;
 
     this.logger.log(`Collecting logs for execution ${executionId}, run ${githubRunId}`);
 
@@ -274,6 +276,28 @@ export class ExecutionProcessor extends WorkerHost {
       });
 
       const logEntries = this.parseWorkflowLogs({ logsBuffer });
+
+      // Extract cost data from logs (provider-specific patterns)
+      if (provider) {
+        try {
+          const costData = extractCostFromLogs({ provider, logEntries });
+          if (costData) {
+            await this.executionRepository.updateCost({
+              executionId,
+              inputTokens: costData.inputTokens,
+              outputTokens: costData.outputTokens,
+              totalCostMicros: costData.totalCostMicros,
+            });
+            this.logger.log(
+              `Extracted cost for execution ${executionId}: ${costData.totalCostMicros !== null ? `${String(costData.totalCostMicros)} micros` : 'tokens only'}`,
+            );
+          }
+        } catch (costError) {
+          this.logger.warn(
+            `Failed to extract cost for execution ${executionId}: ${costError instanceof Error ? costError.message : String(costError)}`,
+          );
+        }
+      }
 
       const logsToInsert = logEntries.map((entry) => ({
         executionId,

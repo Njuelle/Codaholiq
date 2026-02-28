@@ -44,6 +44,9 @@ export type {
 export type {
   DashboardStats,
   StatusCounts,
+  CostStats,
+  ProviderCostBreakdown,
+  AutomationCostBreakdown,
   ExecutionSummary,
   UpcomingCronTrigger,
 } from '@/modules/dashboard/types';

@@ -177,6 +177,20 @@ Audit logs are queryable by organization owners and admins via `GET /orgs/:orgId
 
 ---
 
+## AI Provider API Key Handling
+
+Codaholiq follows a **zero-trust** approach to AI provider API keys:
+
+- **No storage in Codaholiq**: API keys for AI providers (Anthropic, OpenAI, Google, etc.) are never stored in the Codaholiq database or passed through the Codaholiq API.
+- **GitHub-native secret management**: Keys are stored as GitHub repository secrets, managed by the repository owner through GitHub's encrypted secrets infrastructure.
+- **Runtime-only access**: The GitHub Actions workflow reads secrets from the repository's secret store at execution time. Codaholiq dispatches the workflow but never sees or handles the API key.
+- **Per-repository scoping**: Each repository configures its own API keys, enabling fine-grained control over which teams and repos have access to which AI providers.
+- **Secret masking**: The SecretMaskingService redacts any AI provider key patterns that may appear in logs or error messages, as an additional safety layer.
+
+This design means that even if the Codaholiq application or database were compromised, AI provider API keys would not be exposed.
+
+---
+
 ## Exception Handling
 
 The global **HttpExceptionFilter** ensures no internal details leak to clients:

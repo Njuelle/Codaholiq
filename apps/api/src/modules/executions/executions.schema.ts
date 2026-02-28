@@ -39,6 +39,11 @@ export const executions = pgTable(
     githubRunId: bigint('github_run_id', { mode: 'number' }),
     githubRunUrl: text('github_run_url'),
     errorMessage: text('error_message'),
+    inputTokens: bigint('input_tokens', { mode: 'number' }),
+    outputTokens: bigint('output_tokens', { mode: 'number' }),
+    totalCostMicros: bigint('total_cost_micros', { mode: 'number' }),
+    costCurrency: varchar('cost_currency', { length: 3 }).default('USD'),
+    costReportedAt: timestamp('cost_reported_at', { withTimezone: true }),
     startedAt: timestamp('started_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -47,6 +52,7 @@ export const executions = pgTable(
     index('executions_automation_id_status_idx').on(table.automationId, table.status),
     index('executions_status_created_at_idx').on(table.status, table.createdAt),
     index('executions_github_run_id_idx').on(table.githubRunId),
+    index('executions_created_at_cost_idx').on(table.createdAt, table.totalCostMicros),
   ],
 );
 

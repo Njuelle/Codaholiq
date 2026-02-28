@@ -223,4 +223,46 @@ export class ExecutionsService {
       };
     });
   }
+
+  async getCostStats({ orgId, since }: { orgId: number; since: Date }): Promise<{
+    totalCostMicros: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    executionsWithCost: number;
+  }> {
+    return this.executionRepository.sumCostInDateRange({ orgId, since });
+  }
+
+  async getCostByProvider({
+    orgId,
+    since,
+  }: {
+    orgId: number;
+    since: Date;
+  }): Promise<
+    { provider: string; model: string | null; totalCostMicros: number; count: number }[]
+  > {
+    return this.executionRepository.sumCostByProviderInDateRange({ orgId, since });
+  }
+
+  async getTopCostliestAutomations({
+    orgId,
+    since,
+    limit,
+  }: {
+    orgId: number;
+    since: Date;
+    limit: number;
+  }): Promise<
+    {
+      automationId: number;
+      automationName: string;
+      totalCostMicros: number;
+      executionCount: number;
+      totalInputTokens: number;
+      totalOutputTokens: number;
+    }[]
+  > {
+    return this.executionRepository.topCostliestAutomations({ orgId, since, limit });
+  }
 }

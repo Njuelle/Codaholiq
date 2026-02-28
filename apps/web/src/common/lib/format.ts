@@ -73,6 +73,28 @@ export function computeDurationMs({
   return end - start;
 }
 
+/** Format microdollars to display string: "$1.23", "$0.0042", "< $0.01", "$0.00" */
+export function formatCost(micros: number): string {
+  if (micros < 0) return '$0.00';
+  const dollars = micros / 1_000_000;
+  if (dollars === 0) return '$0.00';
+  if (dollars < 0.01) return '< $0.01';
+  if (dollars < 1) {
+    const full = dollars.toFixed(4);
+    const trimmed = full.replace(/0+$/, '');
+    const decimalPlaces = (trimmed.split('.')[1] ?? '').length;
+    return `$${decimalPlaces < 2 ? dollars.toFixed(2) : trimmed}`;
+  }
+  return `$${dollars.toFixed(2)}`;
+}
+
+/** Format token count: "1,234", "12.5K", "1.2M" */
+export function formatTokens(count: number): string {
+  if (count < 1_000) return count.toLocaleString('en-US');
+  if (count < 1_000_000) return `${(count / 1_000).toFixed(1)}K`;
+  return `${(count / 1_000_000).toFixed(1)}M`;
+}
+
 /** Relative time from now: "2 minutes ago", "just now" */
 export function formatRelativeTime(dateString: string): string {
   const now = Date.now();

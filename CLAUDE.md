@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Codaholiq — a platform for defining GitHub repository automations powered by Claude Code. Users configure triggers (GitHub events, cron, manual), write prompt templates, and the platform dispatches GitHub Actions workflows that invoke the Claude Code GitHub Action. Executions are tracked with real-time log streaming.
+Codaholiq — an AI automations governance platform for GitHub repositories. Users configure triggers (GitHub events, cron, manual), choose an AI provider (Claude Code, OpenAI Codex, Gemini CLI, or OpenCode), write prompt templates, and the platform dispatches GitHub Actions workflows to the selected provider. Executions are tracked with real-time log streaming and cost analytics.
 
 ## Architecture
 
@@ -34,7 +34,8 @@ modules/
     triggers/                 # Event matching, cron scheduling, conditions
     templates/                # Prompt template engine, safety utils
     dto/                      # Automation DTOs
-  executions/                 # Execution tracking, BullMQ processors, SSE logs
+  executions/                 # Execution tracking, BullMQ processors, SSE logs, cost extraction
+  providers/                  # AI provider registry, model catalog, dispatch input mapping
   permissions/                # Role-based permissions
   audit/                      # Audit logging
   notifications/              # User notifications

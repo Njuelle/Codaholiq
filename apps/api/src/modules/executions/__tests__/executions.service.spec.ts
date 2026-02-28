@@ -19,6 +19,15 @@ function createMockExecutionRepository() {
     findById: vi.fn(),
     findLogs: vi.fn().mockResolvedValue([]),
     countByStatus: vi.fn().mockResolvedValue([]),
+    sumCostInDateRange: vi.fn().mockResolvedValue({
+      totalCostMicros: 0,
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      executionsWithCost: 0,
+    }),
+    sumCostByProviderInDateRange: vi.fn().mockResolvedValue([]),
+    topCostliestAutomations: vi.fn().mockResolvedValue([]),
+    countByStatusInDateRange: vi.fn().mockResolvedValue([]),
   };
 }
 
@@ -254,6 +263,62 @@ describe('ExecutionsService', () => {
             resolve();
           },
         });
+      });
+    });
+  });
+
+  describe('getCostStats', () => {
+    it('should delegate to repository', async () => {
+      const expected = {
+        totalCostMicros: 500000,
+        totalInputTokens: 10000,
+        totalOutputTokens: 2000,
+        executionsWithCost: 5,
+      };
+      executionRepo.sumCostInDateRange.mockResolvedValue(expected);
+      const since = new Date();
+
+      const result = await service.getCostStats({ orgId: 10, since });
+
+      expect(result).toEqual(expected);
+      expect(executionRepo.sumCostInDateRange).toHaveBeenCalledWith({ orgId: 10, since });
+    });
+  });
+
+  describe('getCostByProvider', () => {
+    it('should delegate to repository', async () => {
+      const expected = [{ provider: 'claude-code', model: null, totalCostMicros: 100, count: 1 }];
+      executionRepo.sumCostByProviderInDateRange.mockResolvedValue(expected);
+      const since = new Date();
+
+      const result = await service.getCostByProvider({ orgId: 10, since });
+
+      expect(result).toEqual(expected);
+    });
+  });
+
+  describe('getTopCostliestAutomations', () => {
+    it('should delegate to repository with limit', async () => {
+      const expected = [
+        {
+          automationId: 1,
+          automationName: 'Bot',
+          totalCostMicros: 500000,
+          executionCount: 10,
+          totalInputTokens: 5000,
+          totalOutputTokens: 1000,
+        },
+      ];
+      executionRepo.topCostliestAutomations.mockResolvedValue(expected);
+      const since = new Date();
+
+      const result = await service.getTopCostliestAutomations({ orgId: 10, since, limit: 5 });
+
+      expect(result).toEqual(expected);
+      expect(executionRepo.topCostliestAutomations).toHaveBeenCalledWith({
+        orgId: 10,
+        since,
+        limit: 5,
       });
     });
   });

@@ -16,9 +16,15 @@ export interface Execution {
   readonly triggerEvent: unknown;
   readonly resolvedPrompt: string;
   readonly provider: string | null;
+  readonly model: string | null;
   readonly githubRunId: number | null;
   readonly githubRunUrl: string | null;
   readonly errorMessage: string | null;
+  readonly inputTokens: number | null;
+  readonly outputTokens: number | null;
+  readonly totalCostMicros: number | null;
+  readonly costCurrency: string | null;
+  readonly costReportedAt: string | null;
   readonly startedAt: string | null;
   readonly completedAt: string | null;
   readonly createdAt: string;
