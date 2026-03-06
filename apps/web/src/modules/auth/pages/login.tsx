@@ -22,7 +22,7 @@ export function LoginPage(): ReactElement {
       <div className="flex flex-col items-center gap-6 text-center">
         <img src="/codaholiq_logo.png" alt="Codaholiq" className="h-20 w-auto" />
         <p className="text-muted-foreground max-w-sm">
-          Automate your GitHub repositories with Claude Code
+          AI-powered automations for your GitHub repositories
         </p>
         <button
           type="button"
