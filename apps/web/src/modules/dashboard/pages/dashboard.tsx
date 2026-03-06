@@ -28,7 +28,10 @@ export function DashboardPage(): ReactElement {
         <div className="grid gap-6 lg:grid-cols-2">
           <Skeleton className="h-64 w-full" />
           <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
         </div>
+        <Skeleton className="h-32 w-full" />
       </div>
     );
   }
@@ -54,16 +57,13 @@ export function DashboardPage(): ReactElement {
       <StatsCards stats={stats} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          <RecentExecutionsList executions={stats.recentExecutions} orgId={orgId} />
-          <TopCostliestAutomationsCard automations={stats.topCostliestAutomations} orgId={orgId} />
-        </div>
-        <div className="space-y-6">
-          <CostStatsCard costStats={stats.costStats} />
-          <ExecutionStatsTabs stats={stats.executionStats} />
-          <UpcomingCronsCard triggers={stats.upcomingCronTriggers} orgId={orgId} />
-        </div>
+        <RecentExecutionsList executions={stats.recentExecutions} orgId={orgId} />
+        <CostStatsCard costStats={stats.costStats} />
+        <TopCostliestAutomationsCard automations={stats.topCostliestAutomations} orgId={orgId} />
+        <ExecutionStatsTabs stats={stats.executionStats} />
       </div>
+
+      <UpcomingCronsCard triggers={stats.upcomingCronTriggers} orgId={orgId} />
     </div>
   );
 }
