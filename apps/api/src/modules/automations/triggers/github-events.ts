@@ -111,6 +111,7 @@ export const GITHUB_EVENTS_CATALOG: readonly GitHubEventDefinition[] = [
       { path: 'pull_request.base.ref', description: 'Target branch name' },
       { path: 'pull_request.head.ref', description: 'Source branch name' },
       { path: 'pull_request.title', description: 'PR title' },
+      { path: 'pull_request.body', description: 'PR body text' },
       { path: 'pull_request.draft', description: 'Whether PR is a draft' },
       { path: 'pull_request.user.login', description: 'PR author username' },
       { path: 'pull_request.labels', description: 'PR labels (array)' },
@@ -233,6 +234,7 @@ export const GITHUB_EVENTS_CATALOG: readonly GitHubEventDefinition[] = [
     hasEntityBuiltIns: true,
     payloadPaths: [
       { path: 'issue.title', description: 'Issue title' },
+      { path: 'issue.body', description: 'Issue body text' },
       { path: 'issue.state', description: 'Issue state (open/closed)' },
       { path: 'issue.user.login', description: 'Issue author username' },
       { path: 'issue.labels', description: 'Issue labels (array)' },
