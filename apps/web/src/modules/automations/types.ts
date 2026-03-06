@@ -163,4 +163,6 @@ export interface CatalogResponse {
 export interface CreateFromTemplateInput {
   readonly templateSlug: string;
   readonly repoId: number;
+  readonly provider?: string;
+  readonly model?: string | null;
 }

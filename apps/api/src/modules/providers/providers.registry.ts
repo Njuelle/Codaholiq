@@ -1,6 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import type { ProviderDefinition, ProviderModel } from './provider.types';
 
+export const PROVIDER_IDS = ['claude-code', 'opencode', 'codex', 'gemini'] as const;
+export type ProviderId = (typeof PROVIDER_IDS)[number];
+
+export const DEFAULT_PROVIDER_ID: ProviderId = 'claude-code';
+
 const CLAUDE_CODE: ProviderDefinition = {
   id: 'claude-code',
   name: 'Claude Code',
@@ -134,10 +139,6 @@ const GEMINI: ProviderDefinition = {
 const PROVIDERS: readonly ProviderDefinition[] = [CLAUDE_CODE, OPENCODE, CODEX, GEMINI];
 
 const PROVIDER_MAP = new Map<string, ProviderDefinition>(PROVIDERS.map((p) => [p.id, p]));
-
-export const PROVIDER_IDS = PROVIDERS.map((p) => p.id) as [string, ...string[]];
-
-export const DEFAULT_PROVIDER_ID = 'claude-code';
 
 @Injectable()
 export class ProvidersRegistry {

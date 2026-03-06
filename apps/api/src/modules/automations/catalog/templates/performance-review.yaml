@@ -55,5 +55,4 @@ promptTemplate: |
   - Rate the severity: **critical** (will cause issues at scale), **warning** (suboptimal but functional), **note** (minor optimization opportunity)
 
   If no performance issues are found, post a brief note confirming what was checked.
-model: null
 variables: []

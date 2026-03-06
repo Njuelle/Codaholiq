@@ -51,5 +51,4 @@ promptTemplate: |
 
   Do NOT remove any labels that were already manually applied by the author.
   If no matching labels exist in the repo, do nothing — do not create labels.
-model: null
 variables: []

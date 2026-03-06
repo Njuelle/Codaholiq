@@ -50,5 +50,4 @@ promptTemplate: |
 
   Keep the description concise but informative. Focus on the "why" more than the "what" — reviewers can read the diff for the "what".
   If the PR already has a substantial description (more than 3 lines of meaningful content), leave it as-is and do nothing.
-model: null
 variables: []

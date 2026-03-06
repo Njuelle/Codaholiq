@@ -38,5 +38,4 @@ promptTemplate: |
 
   ### 4. Update the release
   Update the release body with the generated notes using `gh release edit {{release.tag_name}} --notes "<generated notes>"`.
-model: null
 variables: []

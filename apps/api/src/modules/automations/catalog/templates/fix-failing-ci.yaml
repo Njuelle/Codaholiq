@@ -44,5 +44,4 @@ promptTemplate: |
      - Reference the failed workflow run
 
   If the failure is flaky or infrastructure-related (network timeout, runner issue, OOM), leave a comment on the most recent commit explaining the situation and suggesting a re-run instead.
-model: null
 variables: []

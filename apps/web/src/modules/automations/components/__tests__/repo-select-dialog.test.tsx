@@ -19,7 +19,7 @@ function renderDialog(
   overrides: Partial<{
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onConfirm: (repoId: number) => void;
+    onConfirm: (params: { repoId: number; provider: string; model: string | null }) => void;
     isLoading: boolean;
   }> = {},
 ): ReturnType<typeof renderWithProviders> {
@@ -42,7 +42,7 @@ describe('RepoSelectDialog', () => {
   it('should render dialog title and template name', async () => {
     renderDialog();
 
-    expect(await screen.findByText('Select a Repository')).toBeInTheDocument();
+    expect(await screen.findByText('Configure Automation')).toBeInTheDocument();
     expect(screen.getByText(/PR Code Review/)).toBeInTheDocument();
   });
 
@@ -53,13 +53,20 @@ describe('RepoSelectDialog', () => {
     expect(createButton).toBeDisabled();
   });
 
+  it('should render provider and model selects', async () => {
+    renderDialog();
+
+    expect(await screen.findByText('Provider')).toBeInTheDocument();
+    expect(screen.getByText('Model')).toBeInTheDocument();
+  });
+
   it('should enable Create button after selecting a repo', async () => {
     const user = userEvent.setup();
     renderDialog();
 
-    // Open the select dropdown
-    const trigger = await screen.findByRole('combobox');
-    await user.click(trigger);
+    // Open the repo select dropdown (first combobox)
+    const triggers = await screen.findAllByRole('combobox');
+    await user.click(triggers[0] as HTMLElement);
 
     // Select a repo
     const option = await screen.findByText('test-org/repo-1');
@@ -71,13 +78,13 @@ describe('RepoSelectDialog', () => {
     });
   });
 
-  it('should call onConfirm with selected repoId', async () => {
+  it('should call onConfirm with repoId, provider, and model', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
     renderDialog({ onConfirm });
 
-    const trigger = await screen.findByRole('combobox');
-    await user.click(trigger);
+    const triggers = await screen.findAllByRole('combobox');
+    await user.click(triggers[0] as HTMLElement);
 
     const option = await screen.findByText('test-org/repo-1');
     await user.click(option);
@@ -85,7 +92,11 @@ describe('RepoSelectDialog', () => {
     const createButton = screen.getByRole('button', { name: 'Create Automation' });
     await user.click(createButton);
 
-    expect(onConfirm).toHaveBeenCalledWith(expect.any(Number));
+    expect(onConfirm).toHaveBeenCalledWith({
+      repoId: expect.any(Number),
+      provider: expect.any(String),
+      model: null,
+    });
   });
 
   it('should call onOpenChange when cancel is clicked', async () => {

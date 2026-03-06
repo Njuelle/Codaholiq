@@ -53,5 +53,4 @@ promptTemplate: |
   ### 6. Summary
   If no updates are needed, do nothing (don't create empty PRs or issues).
   If updates were made, leave a summary comment on the batch PR explaining the overall update status.
-model: null
 variables: []

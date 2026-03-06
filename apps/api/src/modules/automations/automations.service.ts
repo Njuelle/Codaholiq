@@ -79,11 +79,15 @@ export class AutomationService {
     userId,
     templateSlug,
     repoId,
+    provider,
+    model,
   }: {
     orgId: number;
     userId: number;
     templateSlug: string;
     repoId: number;
+    provider?: string;
+    model?: string | null;
   }): Promise<AutomationWithVariables> {
     const template = this.catalogService.getTemplateBySlug({ slug: templateSlug });
     if (!template) {
@@ -103,8 +107,8 @@ export class AutomationService {
         triggerType: template.triggerType,
         triggerConfig: template.triggerConfig,
         promptTemplate: template.promptTemplate,
-        provider: template.provider ?? DEFAULT_PROVIDER_ID,
-        model: template.model,
+        provider: provider ?? template.provider ?? DEFAULT_PROVIDER_ID,
+        model: model !== undefined ? model : template.model,
         enabled: true,
         variables: template.variables.map((v) => ({
           key: v.key,

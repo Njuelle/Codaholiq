@@ -47,5 +47,4 @@ promptTemplate: |
   - Links to each affected issue/PR
 
   If nothing was stale, do nothing (no empty reports).
-model: null
 variables: []

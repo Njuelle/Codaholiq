@@ -57,11 +57,21 @@ export function AutomationNewPage(): ReactElement {
     setSelectedTemplate(template);
   };
 
-  const handleRepoConfirm = (repoId: number): void => {
+  const handleRepoConfirm = ({
+    repoId,
+    provider,
+    model,
+  }: {
+    repoId: number;
+    provider: string;
+    model: string | null;
+  }): void => {
     if (!selectedTemplate) return;
     createFromTemplate.mutate({
       templateSlug: selectedTemplate.slug,
       repoId,
+      provider,
+      model,
     });
   };
 

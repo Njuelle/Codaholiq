@@ -62,5 +62,4 @@ promptTemplate: |
 
   For each finding, include: the file and line number, what the issue is, why it's a risk, and how to fix it.
   If no security issues are found, post a brief confirmation of what was checked.
-model: null
 variables: []

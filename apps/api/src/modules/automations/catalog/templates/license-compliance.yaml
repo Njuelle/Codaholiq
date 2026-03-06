@@ -68,5 +68,4 @@ promptTemplate: |
   - **Block:** explain the issue and suggest permissive alternatives
 
   For blocked dependencies, search the package registry for alternative packages with compatible licenses that provide similar functionality.
-model: null
 variables: []

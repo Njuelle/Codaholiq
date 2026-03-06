@@ -49,5 +49,4 @@ promptTemplate: |
   - Be constructive and specific — explain *why* something is an issue and suggest a concrete fix
   - Acknowledge what the PR does well — good reviews are balanced
   - End with a clear verdict: Looks good / Has suggestions / Needs changes
-model: null
 variables: []

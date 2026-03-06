@@ -189,7 +189,7 @@ describe('AutomationService', () => {
       triggerType: 'event' as const,
       triggerConfig: { events: ['pull_request.opened'] },
       promptTemplate: 'Review {{pr.title}}',
-      provider: 'claude-code',
+      provider: 'claude-code' as const,
       model: null,
       enabled: true,
       variables: [],
@@ -806,6 +806,74 @@ describe('AutomationService', () => {
           variables: [{ key: 'depth', value: 'thorough', source: 'static', required: false }],
         }),
       );
+    });
+
+    it('should use user-provided provider over template default', async () => {
+      catalogService.getTemplateBySlug.mockReturnValue(mockTemplate);
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      automationRepo.create.mockResolvedValue(makeAutomation({ provider: 'codex' }));
+
+      await service.createFromTemplate({
+        orgId: 10,
+        userId: 1,
+        templateSlug: 'pr-code-review',
+        repoId: 100,
+        provider: 'codex',
+      });
+
+      expect(automationRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: 'codex' }),
+      );
+    });
+
+    it('should use user-provided model over template default', async () => {
+      catalogService.getTemplateBySlug.mockReturnValue(mockTemplate);
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      automationRepo.create.mockResolvedValue(makeAutomation({ model: 'claude-opus-4-6' }));
+
+      await service.createFromTemplate({
+        orgId: 10,
+        userId: 1,
+        templateSlug: 'pr-code-review',
+        repoId: 100,
+        model: 'claude-opus-4-6',
+      });
+
+      expect(automationRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'claude-opus-4-6' }),
+      );
+    });
+
+    it('should fall back to template provider when no provider given', async () => {
+      catalogService.getTemplateBySlug.mockReturnValue(mockTemplate);
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      automationRepo.create.mockResolvedValue(makeAutomation());
+
+      await service.createFromTemplate({
+        orgId: 10,
+        userId: 1,
+        templateSlug: 'pr-code-review',
+        repoId: 100,
+      });
+
+      expect(automationRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: 'claude-code' }),
+      );
+    });
+
+    it('should set model to null when not provided and template has no model', async () => {
+      catalogService.getTemplateBySlug.mockReturnValue(mockTemplate);
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      automationRepo.create.mockResolvedValue(makeAutomation());
+
+      await service.createFromTemplate({
+        orgId: 10,
+        userId: 1,
+        templateSlug: 'pr-code-review',
+        repoId: 100,
+      });
+
+      expect(automationRepo.create).toHaveBeenCalledWith(expect.objectContaining({ model: null }));
     });
   });
 });

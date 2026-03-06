@@ -56,5 +56,4 @@ promptTemplate: |
     - **Fix:** what was changed and how it resolves the issue
     - **Testing:** what test was added and what it covers
   - Request review from the author of the code that contained the bug (via `git blame`)
-model: null
 variables: []

@@ -52,5 +52,4 @@ promptTemplate: |
   - If the migration is safe, confirm what was checked
 
   Include specific line references and suggest safe alternatives for each risk found.
-model: null
 variables: []

@@ -67,5 +67,4 @@ promptTemplate: |
   - Include a table of contents at the top with links to each section
   - Add a "Getting Started" section: base URL, authentication flow, rate limits, common headers
   - Open a PR titled: "docs: generate API reference documentation"
-model: null
 variables: []

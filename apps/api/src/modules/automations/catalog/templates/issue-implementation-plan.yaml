@@ -75,5 +75,4 @@ promptTemplate: |
   ```
 
   Reference specific code paths with file names and line ranges. The plan should be detailed enough that a developer can pick it up and start implementing without further research.
-model: null
 variables: []

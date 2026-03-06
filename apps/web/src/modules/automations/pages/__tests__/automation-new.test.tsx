@@ -78,7 +78,7 @@ describe('AutomationNewPage', () => {
     const templateCard = await screen.findByText('PR Code Review');
     await user.click(templateCard);
 
-    expect(await screen.findByText('Select a Repository')).toBeInTheDocument();
+    expect(await screen.findByText('Configure Automation')).toBeInTheDocument();
   });
 
   it('should show loading skeleton while fetching catalog', async () => {
@@ -159,13 +159,13 @@ describe('AutomationNewPage', () => {
     const templateCard = await screen.findByText('PR Code Review');
     await user.click(templateCard);
 
-    expect(await screen.findByText('Select a Repository')).toBeInTheDocument();
+    expect(await screen.findByText('Configure Automation')).toBeInTheDocument();
 
     const cancelButton = screen.getByRole('button', { name: 'Cancel' });
     await user.click(cancelButton);
 
     await waitFor(() => {
-      expect(screen.queryByText('Select a Repository')).not.toBeInTheDocument();
+      expect(screen.queryByText('Configure Automation')).not.toBeInTheDocument();
     });
   });
 });

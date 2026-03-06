@@ -71,6 +71,8 @@ export class AutomationsController {
       userId: user.sub,
       templateSlug: dto.templateSlug,
       repoId: dto.repoId,
+      provider: dto.provider,
+      model: dto.model,
     });
   }
 

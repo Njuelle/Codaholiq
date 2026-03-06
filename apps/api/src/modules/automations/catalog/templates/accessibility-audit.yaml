@@ -58,5 +58,4 @@ promptTemplate: |
   - Rate: **violation** (WCAG failure, must fix), **warning** (best practice, should fix), **note** (enhancement)
 
   If no a11y issues are found, post a brief note confirming what was checked.
-model: null
 variables: []

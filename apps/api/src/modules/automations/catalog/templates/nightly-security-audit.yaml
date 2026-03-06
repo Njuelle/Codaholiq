@@ -88,5 +88,4 @@ promptTemplate: |
   - Recurring issues (flagged multiple times)
 
   Label the issue with `security` and `audit`. If there are critical findings, also label with `urgent`.
-model: null
 variables: []

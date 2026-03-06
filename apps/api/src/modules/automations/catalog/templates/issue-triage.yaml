@@ -38,5 +38,4 @@ promptTemplate: |
   6. **Post a welcome comment** — acknowledge the issue, explain what you found during triage (mention specific files or modules if relevant), and set expectations. Be friendly and encourage follow-up.
 
   7. **Check CODEOWNERS** — if a `CODEOWNERS` file exists, identify the owner of the affected area and mention them in your comment so they're notified.
-model: null
 variables: []

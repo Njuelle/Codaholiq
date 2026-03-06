@@ -50,5 +50,4 @@ promptTemplate: |
   - Push the commit to the PR branch
 
   Leave a PR comment summarizing what was tested and any areas that couldn't be automatically tested (suggest manual testing for those).
-model: null
 variables: []

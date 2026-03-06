@@ -57,5 +57,4 @@ promptTemplate: |
   - Protected branches skipped: Z
 
   If no cleanup is needed, do nothing (no empty reports).
-model: null
 variables: []

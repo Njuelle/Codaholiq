@@ -63,5 +63,4 @@ promptTemplate: |
   - PRs with conflicts found: X
   - Successfully resolved: Y
   - Guidance posted (complex conflicts): Z — list which PRs and why
-model: null
 variables: []

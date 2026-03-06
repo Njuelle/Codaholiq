@@ -46,5 +46,4 @@ promptTemplate: |
   - Label the issue with `audit` (create the label if it doesn't exist)
 
   If a previous audit issue exists (search for "Code Audit Report"), reference it and note any trends (improving/degrading).
-model: null
 variables: []

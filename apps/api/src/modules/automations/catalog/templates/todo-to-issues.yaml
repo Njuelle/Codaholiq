@@ -61,5 +61,4 @@ promptTemplate: |
   - Remaining untracked (if over the 10-issue limit): W
 
   If no new TODOs were found, do nothing.
-model: null
 variables: []

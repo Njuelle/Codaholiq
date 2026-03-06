@@ -59,5 +59,4 @@ promptTemplate: |
     - **Follow-up:** what needs to happen before re-deploying
 
   If the root cause is unclear, infrastructure-related, or involves migrations, do NOT create a revert PR — only create the investigation issue. Reverting migrations or infrastructure changes blindly can make things worse.
-model: null
 variables: []

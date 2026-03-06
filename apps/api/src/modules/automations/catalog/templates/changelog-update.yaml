@@ -48,5 +48,4 @@ promptTemplate: |
   - The `[skip changelog]` tag in the title prevents this automation from re-triggering on its own PRs
   - Keep the PR body simple: list the new entries that were added
   - If a changelog update PR already exists and is open, update that branch instead of creating a new PR
-model: null
 variables: []

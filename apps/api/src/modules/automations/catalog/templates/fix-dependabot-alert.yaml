@@ -46,5 +46,4 @@ promptTemplate: |
     - Link to the security advisory
   - Label the PR with `security`
   - If the severity is critical or high, request a review from CODEOWNERS
-model: null
 variables: []
