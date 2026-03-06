@@ -133,6 +133,7 @@ describe('ExecutionProcessor', () => {
       notificationRepo as never,
       createMockRedisLogPublisher() as never,
       createMockFailureTracker() as never,
+      { mask: vi.fn().mockImplementation(({ text }: { text: string }) => text) } as never,
       {
         mapDispatchInputs: vi
           .fn()

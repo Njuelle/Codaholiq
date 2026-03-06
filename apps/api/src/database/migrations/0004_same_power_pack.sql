@@ -1,0 +1,1 @@
+ALTER TABLE "shared_variables" ADD COLUMN "is_secret" boolean DEFAULT false NOT NULL;

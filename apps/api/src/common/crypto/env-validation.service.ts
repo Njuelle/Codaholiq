@@ -12,6 +12,8 @@ export class EnvValidationService implements OnModuleInit {
     this.validateDatabaseUrl();
     this.validateRedisUrl();
     this.validateGitHubConfig();
+    this.validateUrls();
+    this.validateEncryptionKey();
   }
 
   private validateJwtSecrets(): void {
@@ -74,5 +76,66 @@ export class EnvValidationService implements OnModuleInit {
     this.config.getOrThrow<string>('GITHUB_WEBHOOK_SECRET');
 
     this.logger.log('GitHub config validated');
+  }
+
+  private validateUrls(): void {
+    const isProduction = this.config.get<string>('NODE_ENV') === 'production';
+
+    for (const name of ['API_URL', 'FRONTEND_URL'] as const) {
+      const url = this.config.get<string>(name);
+      if (!url && isProduction) {
+        throw new Error(`${name} must be set in production`);
+      }
+      if (url) {
+        this.validateUrlFormat({ url, name, requireHttps: isProduction });
+      }
+    }
+
+    this.logger.log('URL configuration validated');
+  }
+
+  private validateUrlFormat({
+    url,
+    name,
+    requireHttps,
+  }: {
+    url: string;
+    name: string;
+    requireHttps: boolean;
+  }): void {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      throw new Error(`${name} must be a valid URL (got: "${url}")`);
+    }
+
+    if (requireHttps && parsed.protocol !== 'https:') {
+      throw new Error(`${name} must use HTTPS in production (got: "${parsed.protocol}")`);
+    }
+
+    if (url.endsWith('/')) {
+      throw new Error(`${name} must not end with a trailing slash (got: "${url}")`);
+    }
+  }
+
+  private validateEncryptionKey(): void {
+    const isProduction = this.config.get<string>('NODE_ENV') === 'production';
+    const encryptionKey = this.config.get<string>('ENCRYPTION_KEY');
+
+    if (isProduction && !encryptionKey) {
+      throw new Error(
+        "ENCRYPTION_KEY must be set in production. Generate one with 'openssl rand -hex 32'.",
+      );
+    }
+
+    if (encryptionKey) {
+      if (!/^[0-9a-fA-F]{64}$/.test(encryptionKey)) {
+        throw new Error(
+          'ENCRYPTION_KEY must be a 64-character hex string (32 bytes). Generate with: openssl rand -hex 32',
+        );
+      }
+      this.logger.log('Encryption key validated');
+    }
   }
 }

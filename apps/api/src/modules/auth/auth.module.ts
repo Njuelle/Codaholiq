@@ -5,7 +5,6 @@ import { OrganizationsModule } from '../organizations/organizations.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthRepository } from './auth.repository';
-import { SecretMaskingService } from '../../common/crypto/secret-masking.service';
 
 @Module({
   imports: [
@@ -19,7 +18,7 @@ import { SecretMaskingService } from '../../common/crypto/secret-masking.service
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository, SecretMaskingService],
+  providers: [AuthService, AuthRepository],
   exports: [AuthService, AuthRepository, JwtModule],
 })
 export class AuthModule {}

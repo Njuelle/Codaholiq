@@ -2,9 +2,14 @@ import { Injectable, Inject, NotFoundException, ConflictException } from '@nestj
 import { VariablesRepository } from './variables.repository';
 import { GitHubEntityRepository } from '../github/github-entity.repository';
 import { SanitizationService } from '../../common/sanitization/sanitization.service';
+import { EncryptionService } from '../../common/crypto/encryption.service';
 import type { CreateVariableDto } from './dto/create-variable.dto';
 import type { UpdateVariableDto } from './dto/update-variable.dto';
 import { sharedVariables } from './variables.schema';
+
+const SECRET_MASK = '••••••••';
+
+type VariableRow = typeof sharedVariables.$inferSelect;
 
 @Injectable()
 export class VariablesService {
@@ -15,19 +20,16 @@ export class VariablesService {
     private readonly githubEntityRepository: GitHubEntityRepository,
     @Inject(SanitizationService)
     private readonly sanitization: SanitizationService,
+    @Inject(EncryptionService)
+    private readonly encryption: EncryptionService,
   ) {}
 
-  async list({ orgId }: { orgId: number }): Promise<(typeof sharedVariables.$inferSelect)[]> {
-    return this.variablesRepository.findByOrgId({ orgId });
+  async list({ orgId }: { orgId: number }): Promise<VariableRow[]> {
+    const rows = await this.variablesRepository.findByOrgId({ orgId });
+    return rows.map((row) => (row.isSecret ? { ...row, value: SECRET_MASK } : row));
   }
 
-  async create({
-    orgId,
-    dto,
-  }: {
-    orgId: number;
-    dto: CreateVariableDto;
-  }): Promise<typeof sharedVariables.$inferSelect> {
+  async create({ orgId, dto }: { orgId: number; dto: CreateVariableDto }): Promise<VariableRow> {
     if (dto.repoId) {
       const repo = await this.githubEntityRepository.findRepositoryById({
         id: dto.repoId,
@@ -52,14 +54,20 @@ export class VariablesService {
         })
       : undefined;
 
+    const storedValue = dto.isSecret
+      ? this.encryption.encrypt({ plaintext: sanitizedValue })
+      : sanitizedValue;
+
     try {
-      return await this.variablesRepository.create({
+      const row = await this.variablesRepository.create({
         orgId,
         repoId: dto.repoId ?? null,
         key: sanitizedKey,
-        value: sanitizedValue,
+        value: storedValue,
+        isSecret: dto.isSecret ?? false,
         description: sanitizedDescription,
       });
+      return row.isSecret ? { ...row, value: SECRET_MASK } : row;
     } catch (error: unknown) {
       if (error instanceof Error && error.message.includes('unique')) {
         throw new ConflictException(
@@ -78,14 +86,25 @@ export class VariablesService {
     orgId: number;
     variableId: number;
     dto: UpdateVariableDto;
-  }): Promise<typeof sharedVariables.$inferSelect> {
+  }): Promise<VariableRow> {
+    const existing = await this.variablesRepository.findById({
+      id: variableId,
+      orgId,
+    });
+    if (!existing) {
+      throw new NotFoundException('Variable not found');
+    }
+
     const data: { value?: string; description?: string | null } = {};
 
     if (dto.value !== undefined) {
-      data.value = this.sanitization.sanitizeForStorage({
+      const sanitizedValue = this.sanitization.sanitizeForStorage({
         input: dto.value,
         maxLength: 10000,
       });
+      data.value = existing.isSecret
+        ? this.encryption.encrypt({ plaintext: sanitizedValue })
+        : sanitizedValue;
     }
 
     if (dto.description !== undefined) {
@@ -108,7 +127,7 @@ export class VariablesService {
       throw new NotFoundException('Variable not found');
     }
 
-    return updated;
+    return updated.isSecret ? { ...updated, value: SECRET_MASK } : updated;
   }
 
   async delete({ orgId, variableId }: { orgId: number; variableId: number }): Promise<void> {
@@ -129,7 +148,10 @@ export class VariablesService {
   }: {
     orgId: number;
     repoId: number;
-  }): Promise<(typeof sharedVariables.$inferSelect)[]> {
-    return this.variablesRepository.findForResolution({ orgId, repoId });
+  }): Promise<VariableRow[]> {
+    const rows = await this.variablesRepository.findForResolution({ orgId, repoId });
+    return rows.map((row) =>
+      row.isSecret ? { ...row, value: this.encryption.decrypt({ encrypted: row.value }) } : row,
+    );
   }
 }

@@ -117,7 +117,7 @@ describe('VariablesController', () => {
       });
       expect(variablesService.create).toHaveBeenCalledWith({
         orgId: 10,
-        dto: validBody,
+        dto: { ...validBody, isSecret: false },
       });
     });
 
@@ -182,7 +182,7 @@ describe('VariablesController', () => {
       expect(response.body.data.repoId).toBe(5);
       expect(variablesService.create).toHaveBeenCalledWith({
         orgId: 10,
-        dto: { key: 'repo_key', value: 'repo-value', repoId: 5 },
+        dto: { key: 'repo_key', value: 'repo-value', isSecret: false, repoId: 5 },
       });
     });
   });

@@ -5,6 +5,13 @@ const mockRedis = {
   set: vi.fn().mockResolvedValue('OK'),
 };
 
+const mockEncryption = {
+  encrypt: vi.fn().mockImplementation(({ plaintext }: { plaintext: string }) => `enc:${plaintext}`),
+  decrypt: vi
+    .fn()
+    .mockImplementation(({ encrypted }: { encrypted: string }) => encrypted.replace('enc:', '')),
+};
+
 vi.mock('jsonwebtoken', () => ({
   sign: vi.fn().mockReturnValue('mock-app-jwt'),
 }));
@@ -28,9 +35,21 @@ describe('GitHubApiService', () => {
   beforeEach(() => {
     mockRedis.get.mockReset().mockResolvedValue(null);
     mockRedis.set.mockReset().mockResolvedValue('OK');
+    mockEncryption.encrypt.mockClear();
+    mockEncryption.decrypt.mockClear();
+    mockEncryption.encrypt.mockImplementation(
+      ({ plaintext }: { plaintext: string }) => `enc:${plaintext}`,
+    );
+    mockEncryption.decrypt.mockImplementation(({ encrypted }: { encrypted: string }) =>
+      encrypted.replace('enc:', ''),
+    );
 
     const configService = createMockConfigService();
-    service = new GitHubApiService(configService as never, mockRedis as never);
+    service = new GitHubApiService(
+      configService as never,
+      mockRedis as never,
+      mockEncryption as never,
+    );
 
     originalFetch = globalThis.fetch;
   });
@@ -41,7 +60,7 @@ describe('GitHubApiService', () => {
 
   describe('getInstallationToken', () => {
     it('should return cached token when available', async () => {
-      mockRedis.get.mockResolvedValue('cached-token-123');
+      mockRedis.get.mockResolvedValue('enc:cached-token-123');
 
       const token = await service.getInstallationToken({
         installationId: 1001,
@@ -49,6 +68,7 @@ describe('GitHubApiService', () => {
 
       expect(token).toBe('cached-token-123');
       expect(mockRedis.get).toHaveBeenCalledWith('gh:install-token:1001');
+      expect(mockEncryption.decrypt).toHaveBeenCalledWith({ encrypted: 'enc:cached-token-123' });
     });
 
     it('should fetch token from GitHub API on cache miss', async () => {
@@ -70,9 +90,10 @@ describe('GitHubApiService', () => {
       });
 
       expect(token).toBe('new-token-456');
+      expect(mockEncryption.encrypt).toHaveBeenCalledWith({ plaintext: 'new-token-456' });
       expect(mockRedis.set).toHaveBeenCalledWith(
         'gh:install-token:2002',
-        'new-token-456',
+        'enc:new-token-456',
         'EX',
         expect.any(Number),
       );
@@ -97,14 +118,14 @@ describe('GitHubApiService', () => {
       );
 
       await expect(service.getInstallationToken({ installationId: 3003 })).rejects.toThrow(
-        'Failed to get installation token: 401',
+        'Failed to get installation token: HTTP 401',
       );
     });
   });
 
   describe('getInstallationOctokit', () => {
     it('should return an Octokit instance with installation token', async () => {
-      mockRedis.get.mockResolvedValue('octokit-token');
+      mockRedis.get.mockResolvedValue('enc:octokit-token');
 
       const octokit = await service.getInstallationOctokit({
         installationId: 4004,
@@ -547,7 +568,7 @@ describe('GitHubApiService', () => {
           },
         },
       };
-      mockRedis.get.mockResolvedValue('cached-token');
+      mockRedis.get.mockResolvedValue('enc:cached-token');
       vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
 
       const runs = await service.listWorkflowRuns({
@@ -661,7 +682,7 @@ describe('GitHubApiService', () => {
           },
         },
       };
-      mockRedis.get.mockResolvedValue('cached-token');
+      mockRedis.get.mockResolvedValue('enc:cached-token');
       vi.spyOn(service, 'getInstallationOctokit').mockResolvedValue(mockOctokit as never);
 
       await service.cancelWorkflowRun({

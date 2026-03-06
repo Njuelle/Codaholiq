@@ -4,6 +4,7 @@ export interface SharedVariable {
   readonly repoId: number | null;
   readonly key: string;
   readonly value: string;
+  readonly isSecret: boolean;
   readonly description: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -12,6 +13,7 @@ export interface SharedVariable {
 export interface CreateSharedVariableInput {
   readonly key: string;
   readonly value: string;
+  readonly isSecret?: boolean;
   readonly description?: string;
   readonly repoId?: number;
 }

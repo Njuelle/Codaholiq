@@ -136,4 +136,95 @@ describe('EnvValidationService', () => {
 
     expect(() => service.onModuleInit()).toThrow('Missing GITHUB_CLIENT_ID');
   });
+
+  describe('URL validation', () => {
+    it('should pass with valid HTTP URLs in development', () => {
+      const config = createMockConfig({
+        API_URL: 'http://localhost:3000',
+        FRONTEND_URL: 'http://localhost:5173',
+      });
+      const service = new EnvValidationService(config as unknown as ConfigService);
+
+      expect(() => service.onModuleInit()).not.toThrow();
+    });
+
+    it('should throw for URLs with trailing slash', () => {
+      const config = createMockConfig({
+        API_URL: 'http://localhost:3000/',
+      });
+      const service = new EnvValidationService(config as unknown as ConfigService);
+
+      expect(() => service.onModuleInit()).toThrow('must not end with a trailing slash');
+    });
+
+    it('should throw for invalid URL format', () => {
+      const config = createMockConfig({
+        API_URL: 'not-a-url',
+      });
+      const service = new EnvValidationService(config as unknown as ConfigService);
+
+      expect(() => service.onModuleInit()).toThrow('must be a valid URL');
+    });
+
+    it('should require HTTPS in production', () => {
+      const config = createMockConfig({
+        NODE_ENV: 'production',
+        API_URL: 'http://api.example.com',
+        FRONTEND_URL: 'https://app.example.com',
+        ENCRYPTION_KEY: 'a'.repeat(64),
+      });
+      const service = new EnvValidationService(config as unknown as ConfigService);
+
+      expect(() => service.onModuleInit()).toThrow('must use HTTPS in production');
+    });
+
+    it('should require API_URL in production', () => {
+      const config = createMockConfig({
+        NODE_ENV: 'production',
+        FRONTEND_URL: 'https://app.example.com',
+        ENCRYPTION_KEY: 'a'.repeat(64),
+      });
+      const service = new EnvValidationService(config as unknown as ConfigService);
+
+      expect(() => service.onModuleInit()).toThrow('API_URL must be set in production');
+    });
+  });
+
+  describe('encryption key validation', () => {
+    it('should pass without ENCRYPTION_KEY in development', () => {
+      const config = createMockConfig();
+      const service = new EnvValidationService(config as unknown as ConfigService);
+
+      expect(() => service.onModuleInit()).not.toThrow();
+    });
+
+    it('should require ENCRYPTION_KEY in production', () => {
+      const config = createMockConfig({
+        NODE_ENV: 'production',
+        API_URL: 'https://api.example.com',
+        FRONTEND_URL: 'https://app.example.com',
+      });
+      const service = new EnvValidationService(config as unknown as ConfigService);
+
+      expect(() => service.onModuleInit()).toThrow('ENCRYPTION_KEY must be set in production');
+    });
+
+    it('should reject non-hex ENCRYPTION_KEY', () => {
+      const config = createMockConfig({
+        ENCRYPTION_KEY: 'not-a-hex-key-that-is-long-enough-to-pass-length-check-64chars!',
+      });
+      const service = new EnvValidationService(config as unknown as ConfigService);
+
+      expect(() => service.onModuleInit()).toThrow('must be a 64-character hex string');
+    });
+
+    it('should accept valid 64-char hex ENCRYPTION_KEY', () => {
+      const config = createMockConfig({
+        ENCRYPTION_KEY: 'a'.repeat(64),
+      });
+      const service = new EnvValidationService(config as unknown as ConfigService);
+
+      expect(() => service.onModuleInit()).not.toThrow();
+    });
+  });
 });

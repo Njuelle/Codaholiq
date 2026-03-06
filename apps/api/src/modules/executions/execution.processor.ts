@@ -8,6 +8,7 @@ import { GitHubApiService } from '../github/github-api.service';
 import { NotificationRepository } from '../notifications/notifications.repository';
 import { RedisLogPublisherService } from './redis-log-publisher.service';
 import { JobFailureTrackerService } from '../../common/monitoring/job-failure-tracker.service';
+import { SecretMaskingService } from '../../common/crypto/secret-masking.service';
 import { ProvidersRegistry } from '../providers/providers.registry';
 import {
   EXECUTION_QUEUE,
@@ -48,6 +49,8 @@ export class ExecutionProcessor extends WorkerHost {
     private readonly redisLogPublisher: RedisLogPublisherService,
     @Inject(JobFailureTrackerService)
     private readonly failureTracker: JobFailureTrackerService,
+    @Inject(SecretMaskingService)
+    private readonly secretMasking: SecretMaskingService,
     @Inject(ProvidersRegistry)
     private readonly providersRegistry: ProvidersRegistry,
   ) {
@@ -302,7 +305,7 @@ export class ExecutionProcessor extends WorkerHost {
       const logsToInsert = logEntries.map((entry) => ({
         executionId,
         level: 'info' as const,
-        message: entry.message,
+        message: this.secretMasking.mask({ text: entry.message }),
         metadata: entry.metadata,
       }));
 

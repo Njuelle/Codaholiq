@@ -26,7 +26,7 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { SecretMaskingService } from './common/crypto/secret-masking.service';
+import { CryptoModule } from './common/crypto/crypto.module';
 import { EnvValidationService } from './common/crypto/env-validation.service';
 
 @Module({
@@ -59,6 +59,7 @@ import { EnvValidationService } from './common/crypto/env-validation.service';
         storage: new ThrottlerStorageRedisService(config.getOrThrow<string>('REDIS_URL')),
       }),
     }),
+    CryptoModule,
     DatabaseModule,
     RedisModule,
     AuthModule,
@@ -77,7 +78,6 @@ import { EnvValidationService } from './common/crypto/env-validation.service';
   ],
   providers: [
     EnvValidationService,
-    SecretMaskingService,
     LoggingInterceptor,
     {
       provide: APP_FILTER,

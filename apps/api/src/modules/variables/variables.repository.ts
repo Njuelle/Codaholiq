@@ -41,12 +41,14 @@ export class VariablesRepository {
     repoId,
     key,
     value,
+    isSecret,
     description,
   }: {
     orgId: number;
     repoId?: number | null;
     key: string;
     value: string;
+    isSecret?: boolean;
     description?: string | null;
   }): Promise<typeof sharedVariables.$inferSelect> {
     const [row] = await this.db
@@ -56,6 +58,7 @@ export class VariablesRepository {
         repoId: repoId ?? null,
         key,
         value,
+        isSecret: isSecret ?? false,
         description: description ?? null,
       })
       .returning();

@@ -4,6 +4,7 @@ import { Octokit } from '@octokit/rest';
 import * as jwt from 'jsonwebtoken';
 import type Redis from 'ioredis';
 import { REDIS } from '../redis/redis.constants';
+import { EncryptionService } from '../../common/crypto/encryption.service';
 
 const GITHUB_API_BASE = 'https://api.github.com';
 const APP_JWT_EXPIRY_SECONDS = 600;
@@ -66,6 +67,7 @@ export class GitHubApiService {
   constructor(
     @Inject(ConfigService) private readonly configService: ConfigService,
     @Inject(REDIS) redis: Redis,
+    @Inject(EncryptionService) private readonly encryption: EncryptionService,
   ) {
     this.appId = this.configService.getOrThrow<string>('GITHUB_APP_ID');
     const rawKey = this.configService.getOrThrow<string>('GITHUB_APP_PRIVATE_KEY');
@@ -85,7 +87,7 @@ export class GitHubApiService {
   async getInstallationToken({ installationId }: { installationId: number }): Promise<string> {
     const cacheKey = `${TOKEN_CACHE_PREFIX}${installationId}`;
     const cached = await this.redis.get(cacheKey);
-    if (cached) return cached;
+    if (cached) return this.encryption.decrypt({ encrypted: cached });
 
     const appJwt = this.generateAppJwt();
     const response = await fetch(
@@ -102,7 +104,10 @@ export class GitHubApiService {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throw new Error(`Failed to get installation token: ${response.status} ${errorBody}`);
+      this.logger.warn(
+        `GitHub API error for installation ${installationId}: ${String(response.status)} ${errorBody}`,
+      );
+      throw new Error(`Failed to get installation token: HTTP ${String(response.status)}`);
     }
 
     const data = (await response.json()) as {
@@ -112,7 +117,12 @@ export class GitHubApiService {
     const expiresAt = new Date(data.expires_at);
     const ttlSeconds = Math.max(Math.floor((expiresAt.getTime() - Date.now()) / 1000) - 60, 60);
 
-    await this.redis.set(cacheKey, data.token, 'EX', ttlSeconds);
+    await this.redis.set(
+      cacheKey,
+      this.encryption.encrypt({ plaintext: data.token }),
+      'EX',
+      ttlSeconds,
+    );
     return data.token;
   }
 

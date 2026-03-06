@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import type { Request, Response, NextFunction } from 'express';
 import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -28,6 +29,7 @@ async function bootstrap(): Promise<void> {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],
+          // TODO: Replace 'unsafe-inline' with nonce-based CSP when Tailwind v4 Vite plugin supports it
           styleSrc: ["'self'", "'unsafe-inline'"],
           imgSrc: ["'self'", 'data:', 'https:'],
           connectSrc: ["'self'"],
@@ -43,6 +45,16 @@ async function bootstrap(): Promise<void> {
       referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     }),
   );
+
+  // Permissions-Policy: restrict browser features not used by this application
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader(
+      'Permissions-Policy',
+      'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()',
+    );
+    next();
+  });
+
   app.use(cookieParser());
 
   const frontendUrl = process.env.FRONTEND_URL;
@@ -58,7 +70,9 @@ async function bootstrap(): Promise<void> {
       if (origin === allowedOrigin) {
         callback(null, true);
       } else if (!origin) {
-        // Allow missing origin (SSE EventSource, curl, server-to-server)
+        // SEC: Requests without Origin header are allowed (SSE EventSource, curl, server-to-server).
+        // This is safe because state-changing endpoints require Bearer token auth (not cookie-based),
+        // so missing-origin requests cannot exploit CSRF. The refresh token cookie is SameSite=strict.
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
