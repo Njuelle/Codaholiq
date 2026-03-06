@@ -28,6 +28,8 @@
     "typescript-eslint": "^8.54.0"
   },
   "overrides": {
-    "minimatch": "10.2.4"
+    "minimatch": "10.2.4",
+    "@nestjs/core": "^11.1.16",
+    "@nestjs/platform-express": "^11.1.16"
   }
 }

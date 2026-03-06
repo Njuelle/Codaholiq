@@ -15,11 +15,11 @@
   "dependencies": {
     "@nest-lab/throttler-storage-redis": "^1.2.0",
     "@nestjs/bullmq": "^11.0.0",
-    "@nestjs/common": "^11.0.0",
+    "@nestjs/common": "^11.1.16",
     "@nestjs/config": "^4.0.0",
-    "@nestjs/core": "^11.0.0",
+    "@nestjs/core": "^11.1.16",
     "@nestjs/jwt": "^11.0.2",
-    "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/platform-express": "^11.1.16",
     "@nestjs/throttler": "^6.5.0",
     "@octokit/rest": "^22.0.1",
     "adm-zip": "^0.5.16",
@@ -39,11 +39,11 @@
     "rxjs": "^7.8.0",
     "sanitize-html": "^2.17.0",
     "yaml": "^2.8.2",
-    "zod": "^3.24.0"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
-    "@nestjs/testing": "^11.0.0",
+    "@nestjs/testing": "^11.1.16",
     "@types/adm-zip": "^0.5.7",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",

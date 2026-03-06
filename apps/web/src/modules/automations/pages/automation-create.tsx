@@ -12,7 +12,7 @@ import {
 } from '@/modules/automations/lib/automation-schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback, useState, type ReactElement } from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useParams } from 'react-router-dom';
 
 type StepTab = 'basics' | 'trigger' | 'prompt' | 'review';
@@ -31,9 +31,7 @@ export function AutomationCreatePage(): ReactElement {
   const orgId = Number(orgIdParam);
 
   const form = useForm<AutomationFormValues>({
-    resolver: zodResolver(
-      automationFormSchema as unknown as Parameters<typeof zodResolver>[0],
-    ) as unknown as Resolver<AutomationFormValues>,
+    resolver: zodResolver(automationFormSchema),
     defaultValues: DEFAULT_FORM_VALUES,
   });
 

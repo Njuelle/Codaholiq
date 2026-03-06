@@ -393,7 +393,7 @@ describe('AutomationService', () => {
       const result = await service.update({
         orgId: 10,
         automationId: 1,
-        dto: { name: 'updated-name' },
+        dto: { name: 'updated-name', triggerType: undefined, triggerConfig: undefined },
       });
 
       expect(result.name).toBe('updated-name');
@@ -496,7 +496,7 @@ describe('AutomationService', () => {
         service.update({
           orgId: 10,
           automationId: 1,
-          dto: { name: 'hack' },
+          dto: { name: 'hack', triggerType: undefined, triggerConfig: undefined },
         }),
       ).rejects.toThrow(NotFoundException);
     });

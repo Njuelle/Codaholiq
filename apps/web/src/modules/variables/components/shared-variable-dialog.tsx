@@ -71,7 +71,7 @@ export function SharedVariableDialog({
   const isEditing = variable !== null && variable !== undefined;
 
   const form = useForm<VariableFormValues>({
-    resolver: zodResolver(variableFormSchema as never),
+    resolver: zodResolver(variableFormSchema),
     defaultValues: {
       key: '',
       value: '',

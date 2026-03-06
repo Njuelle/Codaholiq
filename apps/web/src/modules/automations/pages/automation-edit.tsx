@@ -22,7 +22,7 @@ import type {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft } from 'lucide-react';
 import { useCallback, type ReactElement } from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom';
 
 function automationToFormValues(automation: AutomationWithVariables): AutomationFormValues {
@@ -112,9 +112,7 @@ function AutomationEditForm({
   const updateMutation = useUpdateAutomation({ orgId, automationId });
 
   const form = useForm<AutomationFormValues>({
-    resolver: zodResolver(
-      automationFormSchema as unknown as Parameters<typeof zodResolver>[0],
-    ) as unknown as Resolver<AutomationFormValues>,
+    resolver: zodResolver(automationFormSchema),
     defaultValues: automationToFormValues(automation),
   });
 
