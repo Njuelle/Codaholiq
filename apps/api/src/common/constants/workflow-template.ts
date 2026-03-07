@@ -88,18 +88,6 @@ jobs:
             --allowedTools "Bash" "Read" "Edit" "Write" "Glob" "Grep" "WebFetch" "Task"
             \${{ github.event.inputs.model != '' && format('--model "{0}"', github.event.inputs.model) || '' }}
 
-      # --- OpenCode ---
-      - name: Run OpenCode
-        if: github.event.inputs.provider == 'opencode'
-        uses: anomalyco/opencode/github@v1
-        with:
-          model: \${{ github.event.inputs.model }}
-          prompt: \${{ github.event.inputs.prompt }}
-        env:
-          ANTHROPIC_API_KEY: \${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
-          GEMINI_API_KEY: \${{ secrets.GEMINI_API_KEY }}
-
       # --- OpenAI Codex ---
       - name: Run OpenAI Codex
         if: github.event.inputs.provider == 'codex'
@@ -113,9 +101,23 @@ jobs:
       # --- Gemini CLI ---
       - name: Run Gemini CLI
         if: github.event.inputs.provider == 'gemini'
-        uses: google-github-actions/run-gemini-cli@v1
+        uses: google-github-actions/run-gemini-cli@v0
         with:
           gemini_api_key: \${{ secrets.GEMINI_API_KEY }}
           prompt: \${{ github.event.inputs.prompt }}
           gemini_model: \${{ github.event.inputs.model }}
+
+      # --- OpenCode ---
+      - name: Run OpenCode
+        if: github.event.inputs.provider == 'opencode'
+        uses: anomalyco/opencode/github@latest
+        with:
+          model: \${{ github.event.inputs.model }}
+          prompt: \${{ github.event.inputs.prompt }}
+          use_github_token: true
+        env:
+          ANTHROPIC_API_KEY: \${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: \${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
 `;

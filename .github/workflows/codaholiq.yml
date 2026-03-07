@@ -45,6 +45,16 @@ jobs:
   execute:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate provider input
+        run: |
+          KNOWN="claude-code opencode codex gemini"
+          if ! echo "$KNOWN" | grep -qw "$PROVIDER"; then
+            echo "::error::Unknown provider: $PROVIDER (expected one of: $KNOWN)"
+            exit 1
+          fi
+        env:
+          PROVIDER: ${{ github.event.inputs.provider }}
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -90,6 +100,7 @@ jobs:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt: ${{ inputs.prompt }}
           model: ${{ inputs.model }}
+          sandbox: 'workspace-write'
 
       # ── Gemini CLI ───────────────────────────────────────────────
       - name: Run Gemini CLI
@@ -107,7 +118,9 @@ jobs:
         with:
           model: ${{ inputs.model }}
           prompt: ${{ inputs.prompt }}
+          use_github_token: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
