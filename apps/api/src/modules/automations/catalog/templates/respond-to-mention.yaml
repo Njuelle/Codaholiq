@@ -1,0 +1,57 @@
+name: 'Respond to @mention'
+description: 'When someone mentions @codaholiq in a comment, the AI reads the request, understands the context, and responds or takes action accordingly.'
+category: 'Developer Experience'
+icon: 'at-sign'
+triggerType: 'event'
+triggerConfig:
+  events:
+    - 'issue_comment.created'
+    - 'pull_request_review_comment.created'
+    - 'discussion_comment.created'
+    - 'commit_comment.created'
+  conditionGroups:
+    - conditions:
+        - path: 'comment.body'
+          operator: 'contains'
+          value: '@codaholiq'
+        - path: 'comment.user.login'
+          operator: 'not_contains'
+          value: '[bot]'
+promptTemplate: |
+  Someone mentioned @codaholiq in {{event.repo}}.
+
+  **Author:** {{event.comment.author}}
+  **Context:** #{{event.number}} — {{event.title}}
+  **Comment:**
+  {{event.comment.body}}
+
+  ## Instructions
+
+  1. **Understand the request** — read the comment carefully. The user is asking you to do something. Identify:
+    - What action they want (code change, review, explanation, investigation, etc.)
+    - What files, functions, or features they're referring to
+    - Any constraints or preferences they mentioned
+
+  2. **Gather context** — read the issue or PR thread for background:
+    - If this is on an issue: `gh issue view {{event.number}}` to see the full discussion
+    - If this is on a PR: `gh pr view {{event.number}}` to see the PR description and diff
+    - Read any referenced files or code paths mentioned in the conversation
+
+  3. **Execute the request** — do what was asked:
+    - For code changes: make the changes, run tests, and open a PR (or push to the existing branch if this is a PR comment)
+    - For questions: investigate the codebase and formulate a thorough answer
+    - For reviews: analyze the code and provide actionable feedback
+    - For investigations: trace through the code, check logs, and report findings
+
+  4. **Respond** — post a comment on the same issue/PR acknowledging what you did:
+    - Use `gh issue comment {{event.number}} --body "<response>"` for issues
+    - Use `gh pr comment {{event.number}} --body "<response>"` for PRs
+    - Be specific about what you did, what you found, or what you changed
+    - If you opened a PR, link to it in your response
+    - If you couldn't complete the request, explain why and suggest next steps
+
+  5. **Safety rules:**
+    - Never force-push, delete branches, or make destructive changes without explicit permission
+    - If the request is ambiguous, ask a clarifying question in your response comment instead of guessing
+    - If the request involves secrets, credentials, or sensitive data, decline and explain why
+variables: []

@@ -497,6 +497,191 @@ describe('EventMatcherService', () => {
       expect(executionLifecycle.createAndQueue).toHaveBeenCalledTimes(1);
     });
 
+    it('should extract comment built-ins for issue_comment events', async () => {
+      const automation = makeAutomation({
+        triggerConfig: { events: ['issue_comment.created'] },
+      });
+      githubRepo.findRepositoryByFullNameGlobal.mockResolvedValue(makeRepo());
+      automationRepo.findByRepoAndEvent.mockResolvedValue([automation]);
+      automationRepo.findByIdInternal.mockResolvedValue(automation);
+
+      await service.findAndCreateExecutions({
+        repoFullName: 'octocat/hello-world',
+        eventType: 'issue_comment',
+        action: 'created',
+        payload: {
+          action: 'created',
+          repository: { full_name: 'octocat/hello-world' },
+          issue: { number: 5, title: 'Bug report' },
+          comment: { body: '@codaholiq fix this', user: { login: 'contributor' } },
+        },
+      });
+
+      expect(promptService.resolve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          builtIns: expect.objectContaining({
+            'event.comment.body': '@codaholiq fix this',
+            'event.comment.author': 'contributor',
+            'event.number': '5',
+            'event.title': 'Bug report',
+          }),
+        }),
+      );
+    });
+
+    it('should extract comment built-ins for pull_request_review_comment events', async () => {
+      const automation = makeAutomation({
+        triggerConfig: { events: ['pull_request_review_comment.created'] },
+      });
+      githubRepo.findRepositoryByFullNameGlobal.mockResolvedValue(makeRepo());
+      automationRepo.findByRepoAndEvent.mockResolvedValue([automation]);
+      automationRepo.findByIdInternal.mockResolvedValue(automation);
+
+      await service.findAndCreateExecutions({
+        repoFullName: 'octocat/hello-world',
+        eventType: 'pull_request_review_comment',
+        action: 'created',
+        payload: {
+          action: 'created',
+          repository: { full_name: 'octocat/hello-world' },
+          pull_request: { number: 7, title: 'Add feature', body: 'New feature' },
+          comment: { body: '@codaholiq review this line', user: { login: 'reviewer' } },
+        },
+      });
+
+      expect(promptService.resolve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          builtIns: expect.objectContaining({
+            'event.comment.body': '@codaholiq review this line',
+            'event.comment.author': 'reviewer',
+            'event.number': '7',
+            'event.title': 'Add feature',
+          }),
+        }),
+      );
+    });
+
+    it('should extract comment built-ins for discussion_comment events', async () => {
+      const automation = makeAutomation({
+        triggerConfig: { events: ['discussion_comment.created'] },
+      });
+      githubRepo.findRepositoryByFullNameGlobal.mockResolvedValue(makeRepo());
+      automationRepo.findByRepoAndEvent.mockResolvedValue([automation]);
+      automationRepo.findByIdInternal.mockResolvedValue(automation);
+
+      await service.findAndCreateExecutions({
+        repoFullName: 'octocat/hello-world',
+        eventType: 'discussion_comment',
+        action: 'created',
+        payload: {
+          action: 'created',
+          repository: { full_name: 'octocat/hello-world' },
+          discussion: { number: 3, title: 'RFC: New API design', body: 'Proposal for new API' },
+          comment: { body: '@codaholiq thoughts on this?', user: { login: 'author' } },
+        },
+      });
+
+      expect(promptService.resolve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          builtIns: expect.objectContaining({
+            'event.comment.body': '@codaholiq thoughts on this?',
+            'event.comment.author': 'author',
+            'event.number': '3',
+            'event.title': 'RFC: New API design',
+            'event.body': 'Proposal for new API',
+          }),
+        }),
+      );
+    });
+
+    it('should extract comment built-ins for commit_comment events', async () => {
+      const automation = makeAutomation({
+        triggerConfig: { events: ['commit_comment.created'] },
+      });
+      githubRepo.findRepositoryByFullNameGlobal.mockResolvedValue(makeRepo());
+      automationRepo.findByRepoAndEvent.mockResolvedValue([automation]);
+      automationRepo.findByIdInternal.mockResolvedValue(automation);
+
+      await service.findAndCreateExecutions({
+        repoFullName: 'octocat/hello-world',
+        eventType: 'commit_comment',
+        action: 'created',
+        payload: {
+          action: 'created',
+          repository: { full_name: 'octocat/hello-world' },
+          comment: { body: '@codaholiq explain this change', user: { login: 'dev' } },
+        },
+      });
+
+      expect(promptService.resolve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          builtIns: expect.objectContaining({
+            'event.comment.body': '@codaholiq explain this change',
+            'event.comment.author': 'dev',
+          }),
+        }),
+      );
+    });
+
+    it('should leave comment built-ins empty when comment has no body', async () => {
+      const automation = makeAutomation({
+        triggerConfig: { events: ['issue_comment.created'] },
+      });
+      githubRepo.findRepositoryByFullNameGlobal.mockResolvedValue(makeRepo());
+      automationRepo.findByRepoAndEvent.mockResolvedValue([automation]);
+      automationRepo.findByIdInternal.mockResolvedValue(automation);
+
+      await service.findAndCreateExecutions({
+        repoFullName: 'octocat/hello-world',
+        eventType: 'issue_comment',
+        action: 'created',
+        payload: {
+          action: 'created',
+          issue: { number: 1, title: 'Test' },
+          comment: {},
+        },
+      });
+
+      expect(promptService.resolve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          builtIns: expect.objectContaining({
+            'event.comment.body': '',
+            'event.comment.author': '',
+          }),
+        }),
+      );
+    });
+
+    it('should truncate oversized comment body to 10000 characters', async () => {
+      const automation = makeAutomation({
+        triggerConfig: { events: ['issue_comment.created'] },
+      });
+      githubRepo.findRepositoryByFullNameGlobal.mockResolvedValue(makeRepo());
+      automationRepo.findByRepoAndEvent.mockResolvedValue([automation]);
+      automationRepo.findByIdInternal.mockResolvedValue(automation);
+
+      const oversizedBody = 'x'.repeat(15_000);
+
+      await service.findAndCreateExecutions({
+        repoFullName: 'octocat/hello-world',
+        eventType: 'issue_comment',
+        action: 'created',
+        payload: {
+          action: 'created',
+          issue: { number: 1, title: 'Test' },
+          comment: { body: oversizedBody, user: { login: 'spammer' } },
+        },
+      });
+
+      expect(promptService.resolve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          builtIns: expect.objectContaining({
+            'event.comment.body': 'x'.repeat(10_000),
+          }),
+        }),
+      );
+    });
+
     it('should sanitize PII from payload before storing', async () => {
       const automation = makeAutomation();
       githubRepo.findRepositoryByFullNameGlobal.mockResolvedValue(makeRepo());

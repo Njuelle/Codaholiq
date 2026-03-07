@@ -237,6 +237,8 @@ export class EventMatcherService {
       'event.number': '',
       'event.label': '',
       'event.repo': '',
+      'event.comment.body': '',
+      'event.comment.author': '',
     };
 
     // Repository info
@@ -286,6 +288,28 @@ export class EventMatcherService {
       if (issue?.number) builtIns['event.number'] = String(issue.number);
       if (issue?.title) builtIns['event.title'] = issue.title;
       if (issue?.body) builtIns['event.body'] = issue.body;
+    }
+
+    // Discussion comment context
+    if (eventType === 'discussion_comment') {
+      const discussion = payload.discussion as
+        | { number?: number; title?: string; body?: string }
+        | undefined;
+      if (discussion?.number) builtIns['event.number'] = String(discussion.number);
+      if (discussion?.title) builtIns['event.title'] = discussion.title;
+      if (discussion?.body) builtIns['event.body'] = discussion.body;
+    }
+
+    // Comment context (all comment event types)
+    if (
+      eventType === 'issue_comment' ||
+      eventType === 'pull_request_review_comment' ||
+      eventType === 'discussion_comment' ||
+      eventType === 'commit_comment'
+    ) {
+      const comment = payload.comment as { body?: string; user?: { login?: string } } | undefined;
+      if (comment?.body) builtIns['event.comment.body'] = comment.body.slice(0, 10_000);
+      if (comment?.user?.login) builtIns['event.comment.author'] = comment.user.login;
     }
 
     return builtIns;
