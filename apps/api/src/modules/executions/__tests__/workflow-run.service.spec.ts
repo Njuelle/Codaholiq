@@ -85,6 +85,7 @@ describe('WorkflowRunService', () => {
       id: 1,
       status: 'running',
       githubRunId: 5000,
+      provider: 'claude-code',
     });
 
     await service.handleWorkflowRunCompleted({
@@ -99,6 +100,7 @@ describe('WorkflowRunService', () => {
         installationId: 9001,
         owner: 'acme',
         repo: 'widgets',
+        provider: 'claude-code',
       },
       expect.any(Object),
     );

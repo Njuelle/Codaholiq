@@ -83,6 +83,7 @@ export class WorkflowRunService {
           installationId: installation.id,
           owner: repository.owner.login,
           repo: repository.name,
+          provider: execution.provider,
         } satisfies CollectLogsJobData,
         DEFAULT_JOB_OPTIONS,
       );
