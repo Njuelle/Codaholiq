@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import {
+  AtSign,
   SearchCode,
   Shield,
   Tag,
@@ -36,6 +37,7 @@ import { Badge } from '@/common/components/ui/badge';
 import type { CatalogTemplate } from '@/common/types';
 
 const ICON_MAP: Record<string, LucideIcon> = {
+  'at-sign': AtSign,
   'search-code': SearchCode,
   shield: Shield,
   tag: Tag,
