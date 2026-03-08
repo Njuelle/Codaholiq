@@ -33,6 +33,7 @@ export type {
   CatalogCategory,
   CatalogResponse,
   CreateFromTemplateInput,
+  CostLimitStatus,
 } from '@/modules/automations/types';
 export type {
   Execution,

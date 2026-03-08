@@ -87,6 +87,8 @@ export function mockAutomation(overrides?: Partial<Automation>): Automation {
     model: null,
     workflowFile: '.github/workflows/codaholiq.yml',
     enabled: true,
+    monthlyCostLimitMicros: null,
+    costLimitStatus: null,
     createdBy: 1,
     createdAt: '2025-01-01T00:00:00.000Z',
     updatedAt: '2025-01-01T00:00:00.000Z',

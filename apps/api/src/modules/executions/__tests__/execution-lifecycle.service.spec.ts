@@ -24,6 +24,7 @@ function createMockExecutionRepository() {
       status: 'cancelled',
     }),
     countActiveByOrgId: vi.fn().mockResolvedValue(0),
+    sumCostByAutomationInMonth: vi.fn().mockResolvedValue(0),
   };
 }
 
@@ -58,6 +59,15 @@ function createMockQueue() {
   };
 }
 
+function createMockDb() {
+  return {
+    transaction: vi.fn().mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+      const mockTx = { execute: vi.fn().mockResolvedValue(undefined) };
+      return fn(mockTx);
+    }),
+  };
+}
+
 describe('ExecutionLifecycleService', () => {
   let service: ExecutionLifecycleService;
   let executionRepository: ReturnType<typeof createMockExecutionRepository>;
@@ -77,6 +87,7 @@ describe('ExecutionLifecycleService', () => {
       githubApiService as never,
       queue as never,
       { get: vi.fn().mockReturnValue(undefined) } as never,
+      createMockDb() as never,
     );
   });
 
@@ -150,6 +161,96 @@ describe('ExecutionLifecycleService', () => {
           provider: 'claude-code',
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should proceed when monthlyCostLimitMicros is null', async () => {
+      const result = await service.createAndQueue({
+        automationId: 10,
+        automationName: 'Test Automation',
+        repoId: 100,
+        workflowFile: '.github/workflows/codaholiq.yml',
+        triggerEvent: { type: 'manual', triggered_by: 1 },
+        resolvedPrompt: 'test prompt',
+        provider: 'claude-code',
+        monthlyCostLimitMicros: null,
+      });
+
+      expect(result.id).toBe(1);
+      expect(result.status).toBe('pending');
+      expect(executionRepository.sumCostByAutomationInMonth).not.toHaveBeenCalled();
+      expect(queue.add).toHaveBeenCalled();
+    });
+
+    it('should skip cost check when monthlyCostLimitMicros is undefined', async () => {
+      const result = await service.createAndQueue({
+        automationId: 10,
+        automationName: 'Test Automation',
+        repoId: 100,
+        workflowFile: '.github/workflows/codaholiq.yml',
+        triggerEvent: { type: 'manual', triggered_by: 1 },
+        resolvedPrompt: 'test prompt',
+        provider: 'claude-code',
+      });
+
+      expect(result.id).toBe(1);
+      expect(result.status).toBe('pending');
+      expect(executionRepository.sumCostByAutomationInMonth).not.toHaveBeenCalled();
+      expect(queue.add).toHaveBeenCalled();
+    });
+
+    it('should proceed when cost is below limit', async () => {
+      executionRepository.sumCostByAutomationInMonth.mockResolvedValue(500_000);
+
+      const result = await service.createAndQueue({
+        automationId: 10,
+        automationName: 'Test Automation',
+        repoId: 100,
+        workflowFile: '.github/workflows/codaholiq.yml',
+        triggerEvent: { type: 'manual', triggered_by: 1 },
+        resolvedPrompt: 'test prompt',
+        provider: 'claude-code',
+        monthlyCostLimitMicros: 1_000_000,
+      });
+
+      expect(result.id).toBe(1);
+      expect(result.status).toBe('pending');
+      expect(executionRepository.sumCostByAutomationInMonth).toHaveBeenCalledWith({
+        automationId: 10,
+        monthStart: expect.any(Date),
+      });
+      expect(queue.add).toHaveBeenCalled();
+    });
+
+    it('should block execution when cost exceeds limit', async () => {
+      executionRepository.sumCostByAutomationInMonth.mockResolvedValue(1_000_000);
+
+      const result = await service.createAndQueue({
+        automationId: 10,
+        automationName: 'Test Automation',
+        repoId: 100,
+        workflowFile: '.github/workflows/codaholiq.yml',
+        triggerEvent: { type: 'manual', triggered_by: 1 },
+        resolvedPrompt: 'test prompt',
+        provider: 'claude-code',
+        monthlyCostLimitMicros: 1_000_000,
+      });
+
+      expect(result.status).toBe('cost_blocked');
+      expect(executionRepository.create).toHaveBeenCalledWith({
+        automationId: 10,
+        triggerEvent: { type: 'manual', triggered_by: 1 },
+        resolvedPrompt: 'test prompt',
+        provider: 'claude-code',
+      });
+      expect(executionRepository.updateStatus).toHaveBeenCalledWith({
+        id: 1,
+        status: 'cost_blocked',
+        fields: {
+          errorMessage: expect.stringContaining('Monthly cost limit exceeded'),
+          completedAt: expect.any(Date),
+        },
+      });
+      expect(queue.add).not.toHaveBeenCalled();
     });
   });
 

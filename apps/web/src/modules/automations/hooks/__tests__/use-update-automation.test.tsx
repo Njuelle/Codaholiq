@@ -39,6 +39,7 @@ describe('useUpdateAutomation', () => {
       provider: 'claude-code',
       model: null,
       enabled: true,
+      monthlyCostLimitMicros: null,
       variables: [],
       description: null,
     });
@@ -71,6 +72,7 @@ describe('useUpdateAutomation', () => {
       provider: 'claude-code',
       model: null,
       enabled: true,
+      monthlyCostLimitMicros: null,
       variables: [],
       description: null,
     });

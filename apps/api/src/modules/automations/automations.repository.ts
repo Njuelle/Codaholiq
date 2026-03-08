@@ -22,6 +22,7 @@ export class AutomationRepository {
     model,
     workflowFile,
     enabled,
+    monthlyCostLimitMicros,
     variables,
   }: {
     orgId: number;
@@ -36,6 +37,7 @@ export class AutomationRepository {
     model?: string | null;
     workflowFile: string;
     enabled?: boolean;
+    monthlyCostLimitMicros?: number | null;
     variables?: {
       key: string;
       value: string;
@@ -63,6 +65,7 @@ export class AutomationRepository {
           model: model ?? null,
           workflowFile,
           enabled: enabled ?? true,
+          monthlyCostLimitMicros: monthlyCostLimitMicros ?? null,
         })
         .returning();
 
@@ -167,6 +170,7 @@ export class AutomationRepository {
       provider: string;
       model: string | null;
       enabled: boolean;
+      monthlyCostLimitMicros: number | null;
     }>;
   }): Promise<typeof automations.$inferSelect | undefined> {
     const [updated] = await this.db

@@ -29,6 +29,13 @@ export const AutomationUpdateSchema = z
     provider: z.enum(PROVIDER_IDS, { message: 'Unsupported provider' }).optional(),
     model: z.string().max(100).nullable().optional(),
     enabled: z.boolean().optional(),
+    monthlyCostLimitMicros: z
+      .number()
+      .int()
+      .positive()
+      .max(100_000_000_000, 'Cost limit cannot exceed $100,000')
+      .nullable()
+      .optional(),
   })
   .and(
     triggerPairSchema.or(

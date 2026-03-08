@@ -36,6 +36,7 @@ function automationToFormValues(automation: AutomationWithVariables): Automation
     provider: automation.provider,
     model: automation.model,
     enabled: automation.enabled,
+    monthlyCostLimitMicros: automation.monthlyCostLimitMicros,
     variables: [] as {
       key: string;
       value: string;

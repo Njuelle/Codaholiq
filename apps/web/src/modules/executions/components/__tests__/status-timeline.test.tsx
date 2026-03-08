@@ -59,4 +59,15 @@ describe('StatusTimeline', () => {
 
     expect(screen.getByText('Timed out')).toBeInTheDocument();
   });
+
+  it('renders cost_blocked as terminal status', () => {
+    const execution = mockExecution({
+      status: 'cost_blocked',
+      completedAt: '2025-01-01T00:01:00.000Z',
+    });
+    render(<StatusTimeline execution={execution} />);
+
+    expect(screen.getByText('Cost blocked')).toBeInTheDocument();
+    expect(screen.getByText('Created')).toBeInTheDocument();
+  });
 });

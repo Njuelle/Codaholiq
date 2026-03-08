@@ -5,7 +5,8 @@ export type ExecutionStatus =
   | 'completed'
   | 'failed'
   | 'cancelled'
-  | 'timed_out';
+  | 'timed_out'
+  | 'cost_blocked';
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 

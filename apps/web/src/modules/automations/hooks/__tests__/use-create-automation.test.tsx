@@ -39,6 +39,7 @@ const validPayload: AutomationFormValues = {
   provider: 'claude-code',
   model: null,
   enabled: true,
+  monthlyCostLimitMicros: null,
   variables: [],
   triggerType: 'manual',
   triggerConfig: {},

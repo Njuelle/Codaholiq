@@ -6,7 +6,13 @@ export const DISPATCH_JOB = 'dispatch';
 export const POLL_STATUS_JOB = 'poll-status';
 export const COLLECT_LOGS_JOB = 'collect-logs';
 
-export const TERMINAL_STATUSES = new Set(['completed', 'failed', 'cancelled', 'timed_out']);
+export const TERMINAL_STATUSES = new Set([
+  'completed',
+  'failed',
+  'cancelled',
+  'timed_out',
+  'cost_blocked',
+]);
 
 export const DEFAULT_JOB_OPTIONS: JobsOptions = {
   attempts: 3,

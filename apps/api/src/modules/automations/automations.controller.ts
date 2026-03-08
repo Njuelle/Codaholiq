@@ -30,7 +30,11 @@ import { ValidatePromptSchema, ValidatePromptDto } from './dto/validate-prompt.d
 import { SetEnabledSchema, SetEnabledDto } from './dto/set-enabled.dto';
 import { ListAutomationsQuerySchema, ListAutomationsQuery } from './dto/list-automations.dto';
 import type { JwtPayload } from '../auth/dto/auth.dto';
-import type { AutomationWithVariables } from './automations.types';
+import type {
+  AutomationWithVariables,
+  AutomationWithCostStatus,
+  AutomationDetailWithCostStatus,
+} from './automations.types';
 import { automations } from './automations.schema';
 
 @Controller('orgs/:orgId/automations')
@@ -83,7 +87,7 @@ export class AutomationsController {
     @Param('orgId', ParseIntPipe) orgId: number,
     @Query(new ZodValidationPipe(ListAutomationsQuerySchema))
     query: ListAutomationsQuery,
-  ): Promise<(typeof automations.$inferSelect)[]> {
+  ): Promise<AutomationWithCostStatus[]> {
     return this.automationService.list({
       orgId,
       filters: {
@@ -102,7 +106,7 @@ export class AutomationsController {
   async findById(
     @Param('orgId', ParseIntPipe) orgId: number,
     @Param('automationId', ParseIntPipe) automationId: number,
-  ): Promise<AutomationWithVariables> {
+  ): Promise<AutomationDetailWithCostStatus> {
     return this.automationService.findById({
       orgId,
       automationId,

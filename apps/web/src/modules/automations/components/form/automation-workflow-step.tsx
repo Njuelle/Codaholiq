@@ -6,7 +6,9 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from '@/common/components/ui/form';
+import { Input } from '@/common/components/ui/input';
 import { Switch } from '@/common/components/ui/switch';
 import type { AutomationFormValues } from '@/modules/automations/lib/automation-schemas';
 import { useSupportedModels } from '@/modules/automations/hooks/use-supported-models';
@@ -125,6 +127,38 @@ export function AutomationWorkflowStep({
             <FormControl>
               <Switch checked={field.value} onCheckedChange={field.onChange} />
             </FormControl>
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="monthlyCostLimitMicros"
+        render={({ field }) => (
+          <FormItem className="rounded-md border p-4">
+            <FormLabel>Monthly Cost Limit (USD)</FormLabel>
+            <FormDescription>
+              Optional. Block new executions when monthly spend exceeds this amount.
+            </FormDescription>
+            <FormControl>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="No limit"
+                value={field.value != null ? field.value / 1_000_000 : ''}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    field.onChange(null);
+                    return;
+                  }
+                  const parsed = parseFloat(val);
+                  field.onChange(isNaN(parsed) ? null : Math.round(parsed * 1_000_000));
+                }}
+              />
+            </FormControl>
+            <FormMessage />
           </FormItem>
         )}
       />

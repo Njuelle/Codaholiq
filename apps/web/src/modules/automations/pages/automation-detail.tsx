@@ -15,7 +15,7 @@ import { useToggleAutomation } from '@/modules/automations/hooks/use-toggle-auto
 import { useTriggerAutomation } from '@/modules/automations/hooks/use-trigger-automation';
 import { useHasPermission } from '@/modules/permissions/hooks/use-has-permission';
 import { Permission } from '@/common/types';
-import { Pencil, Play, Trash2 } from 'lucide-react';
+import { AlertTriangle, Pencil, Play, Trash2 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
@@ -168,6 +168,17 @@ export function AutomationDetailPage(): ReactElement {
           </>
         }
       />
+
+      {automation.costLimitStatus?.isCostLimitExceeded && (
+        <div className="flex items-center gap-3 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+          <AlertTriangle className="size-5 shrink-0" />
+          <p>
+            This automation has exceeded its monthly cost limit of $
+            {((automation.monthlyCostLimitMicros ?? 0) / 1_000_000).toFixed(2)} and will not
+            dispatch new executions until next month.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <AutomationInfoCard automation={automation} />

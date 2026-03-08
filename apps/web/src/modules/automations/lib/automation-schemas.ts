@@ -15,6 +15,7 @@ const baseFields = {
   provider: z.string().min(1, 'Provider is required'),
   model: z.string().nullable(),
   enabled: z.boolean(),
+  monthlyCostLimitMicros: z.number().int().positive().nullable(),
   variables: z.array(variableInputSchema),
 };
 
@@ -79,6 +80,7 @@ export const DEFAULT_FORM_VALUES: AutomationFormValues = {
   provider: 'claude-code',
   model: null,
   enabled: true,
+  monthlyCostLimitMicros: null,
   variables: [],
   triggerType: 'event',
   triggerConfig: { events: [], conditionGroups: [] },

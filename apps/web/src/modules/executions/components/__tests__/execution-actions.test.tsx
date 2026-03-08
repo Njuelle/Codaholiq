@@ -133,6 +133,23 @@ describe('ExecutionActions', () => {
     }
   });
 
+  it('should show retry button for cost_blocked executions', () => {
+    render(
+      <MemoryRouter>
+        <ExecutionActions
+          execution={mockExecution({ status: 'cost_blocked' })}
+          onCancel={vi.fn()}
+          onRetry={vi.fn()}
+          isCancelling={false}
+          isRetrying={false}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument();
+  });
+
   it('should show Retry for cancelled and timed_out statuses', () => {
     for (const status of ['cancelled', 'timed_out'] as const) {
       const { unmount } = render(

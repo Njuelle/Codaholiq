@@ -14,7 +14,7 @@ interface ExecutionActionsProps {
 }
 
 const CANCELLABLE_STATUSES = new Set(['pending', 'dispatching', 'running']);
-const RETRIABLE_STATUSES = new Set(['failed', 'cancelled', 'timed_out']);
+const RETRIABLE_STATUSES = new Set(['failed', 'cancelled', 'timed_out', 'cost_blocked']);
 
 export function ExecutionActions({
   execution,

@@ -6,6 +6,7 @@ export const TERMINAL_STATUSES: ReadonlySet<ExecutionStatus> = new Set([
   'failed',
   'cancelled',
   'timed_out',
+  'cost_blocked',
 ]);
 
 /** Returns true if the given URL is a valid GitHub URL (https only). */

@@ -20,6 +20,7 @@ export const executionStatusEnum = pgEnum('execution_status', [
   'failed',
   'cancelled',
   'timed_out',
+  'cost_blocked',
 ]);
 
 export const logLevelEnum = pgEnum('log_level', ['info', 'warn', 'error', 'debug']);

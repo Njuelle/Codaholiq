@@ -21,6 +21,14 @@ const baseFields = {
   provider: z.enum(PROVIDER_IDS, { message: 'Unsupported provider' }),
   model: z.string().max(100).nullable().optional().default(null),
   enabled: z.boolean().optional().default(true),
+  monthlyCostLimitMicros: z
+    .number()
+    .int()
+    .positive()
+    .max(100_000_000_000, 'Cost limit cannot exceed $100,000')
+    .nullable()
+    .optional()
+    .default(null),
   variables: z.array(VariableSchema).optional().default([]),
 };
 

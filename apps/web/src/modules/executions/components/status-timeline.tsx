@@ -1,7 +1,8 @@
 import { cn } from '@/common/lib/utils';
 import { formatDate, formatDuration, computeDurationMs } from '@/common/lib/format';
 import type { Execution } from '@/common/types';
-import { Check, Circle, Clock, Loader2, X, Ban, AlertTriangle } from 'lucide-react';
+import { TERMINAL_STATUSES } from '@/modules/executions/lib/execution-utils';
+import { Check, Circle, Clock, DollarSign, Loader2, X, Ban, AlertTriangle } from 'lucide-react';
 import type { ReactElement } from 'react';
 
 interface StatusTimelineProps {
@@ -20,11 +21,12 @@ const STATUS_ICONS: Record<string, ReactElement> = {
   failed: <X className="size-4" />,
   cancelled: <Ban className="size-4" />,
   timed_out: <AlertTriangle className="size-4" />,
+  cost_blocked: <DollarSign className="size-4" />,
 };
 
 function deriveSteps(execution: Execution): TimelineStep[] {
   const steps: TimelineStep[] = [];
-  const isTerminal = ['completed', 'failed', 'cancelled', 'timed_out'].includes(execution.status);
+  const isTerminal = TERMINAL_STATUSES.has(execution.status);
 
   // Created
   steps.push({
@@ -58,6 +60,7 @@ function deriveSteps(execution: Execution): TimelineStep[] {
       failed: 'Failed',
       cancelled: 'Cancelled',
       timed_out: 'Timed out',
+      cost_blocked: 'Cost blocked',
     };
     steps.push({
       label: statusLabel[execution.status] ?? execution.status,

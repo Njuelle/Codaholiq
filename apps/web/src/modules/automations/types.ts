@@ -11,6 +11,11 @@ export interface AutomationVariable {
   readonly createdAt: string;
 }
 
+export interface CostLimitStatus {
+  readonly isCostLimitExceeded: boolean;
+  readonly currentMonthCostMicros: number;
+}
+
 export interface Automation {
   readonly id: number;
   readonly orgId: number;
@@ -24,6 +29,8 @@ export interface Automation {
   readonly model: string | null;
   readonly workflowFile: string;
   readonly enabled: boolean;
+  readonly monthlyCostLimitMicros: number | null;
+  readonly costLimitStatus: CostLimitStatus | null;
   readonly createdBy: number;
   readonly createdAt: string;
   readonly updatedAt: string;

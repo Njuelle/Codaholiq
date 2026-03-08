@@ -112,6 +112,21 @@ export function AutomationInfoCard({ automation }: AutomationInfoCardProps): Rea
             </dd>
           </div>
 
+          {automation.monthlyCostLimitMicros != null && (
+            <div>
+              <dt className="text-sm font-medium text-muted-foreground">Monthly Cost Limit</dt>
+              <dd className="mt-1 text-sm">
+                ${(automation.monthlyCostLimitMicros / 1_000_000).toFixed(2)}
+                {automation.costLimitStatus && (
+                  <span className="ml-2 text-muted-foreground">
+                    (${(automation.costLimitStatus.currentMonthCostMicros / 1_000_000).toFixed(2)}{' '}
+                    spent this month)
+                  </span>
+                )}
+              </dd>
+            </div>
+          )}
+
           <div>
             <dt className="text-sm font-medium text-muted-foreground">Created</dt>
             <dd className="mt-1 text-sm">{formatDate(automation.createdAt)}</dd>

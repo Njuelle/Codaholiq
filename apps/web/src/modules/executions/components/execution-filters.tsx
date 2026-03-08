@@ -16,6 +16,7 @@ const EXECUTION_STATUSES: readonly { value: ExecutionStatus; label: string }[] =
   { value: 'failed', label: 'Failed' },
   { value: 'cancelled', label: 'Cancelled' },
   { value: 'timed_out', label: 'Timed out' },
+  { value: 'cost_blocked', label: 'Cost blocked' },
 ];
 
 interface ExecutionFiltersProps {

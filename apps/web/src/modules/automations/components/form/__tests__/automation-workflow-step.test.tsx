@@ -186,4 +186,39 @@ describe('AutomationWorkflowStep', () => {
       expect(screen.queryByText('Conditions')).not.toBeInTheDocument();
     });
   });
+
+  describe('monthly cost limit', () => {
+    it('renders monthly cost limit input', () => {
+      renderWorkflowStep();
+
+      expect(screen.getByText('Monthly Cost Limit (USD)')).toBeInTheDocument();
+      expect(
+        screen.getByText('Optional. Block new executions when monthly spend exceeds this amount.'),
+      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('No limit')).toBeInTheDocument();
+    });
+
+    it('converts dollars to micros on input', async () => {
+      const user = userEvent.setup();
+      renderWorkflowStep();
+
+      const input = screen.getByPlaceholderText('No limit');
+      await user.type(input, '10.50');
+
+      await waitFor(() => {
+        expect(input).toHaveValue(10.5);
+      });
+    });
+
+    it('displays existing micros value as dollars', () => {
+      renderWorkflowStep({
+        defaultValues: {
+          monthlyCostLimitMicros: 5_000_000,
+        },
+      });
+
+      const input = screen.getByPlaceholderText('No limit');
+      expect(input).toHaveValue(5);
+    });
+  });
 });

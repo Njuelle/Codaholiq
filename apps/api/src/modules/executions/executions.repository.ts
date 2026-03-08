@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, desc, gt, count, sum, sql, isNotNull } from 'drizzle-orm';
+import { eq, and, desc, gt, gte, count, sum, sql, isNotNull, inArray } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../../database/database.module';
 import * as schema from '../../database/schema';
@@ -304,6 +304,7 @@ export class ExecutionRepository {
         automationName: string;
         repoId: number;
         workflowFile: string;
+        monthlyCostLimitMicros: number | null;
       }
     | undefined
   > {
@@ -313,6 +314,7 @@ export class ExecutionRepository {
         automationName: automations.name,
         repoId: automations.repoId,
         workflowFile: automations.workflowFile,
+        monthlyCostLimitMicros: automations.monthlyCostLimitMicros,
       })
       .from(executions)
       .innerJoin(automations, eq(executions.automationId, automations.id))
@@ -501,5 +503,58 @@ export class ExecutionRepository {
       sql`DELETE FROM ${executions} WHERE ${executions.createdAt} < ${cutoff}`,
     );
     return Number(result.rowCount);
+  }
+
+  async sumCostByAutomationInMonth({
+    automationId,
+    monthStart,
+  }: {
+    automationId: number;
+    monthStart: Date;
+  }): Promise<number> {
+    const [row] = await this.db
+      .select({
+        totalCostMicros: sum(executions.totalCostMicros),
+      })
+      .from(executions)
+      .where(
+        and(
+          eq(executions.automationId, automationId),
+          gte(executions.createdAt, monthStart),
+          isNotNull(executions.totalCostMicros),
+        ),
+      );
+    return Number(row.totalCostMicros ?? 0);
+  }
+
+  async sumCostByAutomationIdsInMonth({
+    automationIds,
+    monthStart,
+  }: {
+    automationIds: readonly number[];
+    monthStart: Date;
+  }): Promise<Map<number, number>> {
+    if (automationIds.length === 0) return new Map();
+
+    const rows = await this.db
+      .select({
+        automationId: executions.automationId,
+        totalCostMicros: sum(executions.totalCostMicros),
+      })
+      .from(executions)
+      .where(
+        and(
+          inArray(executions.automationId, automationIds as number[]),
+          gte(executions.createdAt, monthStart),
+          isNotNull(executions.totalCostMicros),
+        ),
+      )
+      .groupBy(executions.automationId);
+
+    const result = new Map<number, number>();
+    for (const row of rows) {
+      result.set(row.automationId, Number(row.totalCostMicros ?? 0));
+    }
+    return result;
   }
 }

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AutomationRepository } from './automations.repository';
+import { ExecutionRepository } from '../executions/executions.repository';
 import { ExecutionLifecycleService } from '../executions/execution-lifecycle.service';
 import { GitHubEntityRepository } from '../github/github-entity.repository';
 import { TriggerValidationService } from './triggers/trigger-validation.service';
@@ -20,7 +21,13 @@ import { ProvidersRegistry, DEFAULT_PROVIDER_ID } from '../providers/providers.r
 import { AutomationCreateDto } from './dto/create-automation.dto';
 import { AutomationUpdateDto } from './dto/update-automation.dto';
 import type { ValidatePromptDto } from './dto/validate-prompt.dto';
-import type { AutomationWithVariables } from './automations.types';
+import type {
+  AutomationWithVariables,
+  AutomationWithCostStatus,
+  AutomationDetailWithCostStatus,
+  CostLimitStatus,
+} from './automations.types';
+import { getMonthStart } from '../../common/date-utils';
 import { asCronConfig, asEventConfig } from './trigger-config.types';
 import { automations, DEFAULT_WORKFLOW_FILE } from './automations.schema';
 import { executions } from '../executions/executions.schema';
@@ -34,6 +41,8 @@ export class AutomationService {
   constructor(
     @Inject(AutomationRepository)
     private readonly automationRepository: AutomationRepository,
+    @Inject(ExecutionRepository)
+    private readonly executionRepository: ExecutionRepository,
     @Inject(ExecutionLifecycleService)
     private readonly executionLifecycle: ExecutionLifecycleService,
     @Inject(GitHubEntityRepository)
@@ -162,6 +171,7 @@ export class AutomationService {
       provider?: string;
       model?: string | null;
       enabled: boolean;
+      monthlyCostLimitMicros?: number | null;
       variables?: {
         key: string;
         value: string;
@@ -208,6 +218,7 @@ export class AutomationService {
       model: dto.model ?? null,
       workflowFile: DEFAULT_WORKFLOW_FILE,
       enabled: dto.enabled,
+      monthlyCostLimitMicros: dto.monthlyCostLimitMicros,
       variables: dto.variables,
     });
 
@@ -231,7 +242,7 @@ export class AutomationService {
   }: {
     orgId: number;
     automationId: number;
-  }): Promise<AutomationWithVariables> {
+  }): Promise<AutomationDetailWithCostStatus> {
     const automation = await this.automationRepository.findById({
       id: automationId,
       orgId,
@@ -239,7 +250,13 @@ export class AutomationService {
     if (!automation) {
       throw new NotFoundException('Automation not found');
     }
-    return automation;
+
+    const costLimitStatus = await this.computeCostLimitStatus({
+      automationId: automation.id,
+      monthlyCostLimitMicros: automation.monthlyCostLimitMicros,
+    });
+
+    return { ...automation, costLimitStatus };
   }
 
   async list({
@@ -254,8 +271,33 @@ export class AutomationService {
       limit?: number;
       offset?: number;
     };
-  }): Promise<(typeof automations.$inferSelect)[]> {
-    return this.automationRepository.findByOrgId({ orgId, filters });
+  }): Promise<AutomationWithCostStatus[]> {
+    const items = await this.automationRepository.findByOrgId({ orgId, filters });
+
+    const automationsWithLimits = items.filter((a) => a.monthlyCostLimitMicros != null);
+    if (automationsWithLimits.length === 0) {
+      return items.map((a) => ({ ...a, costLimitStatus: null }));
+    }
+
+    const monthStart = getMonthStart();
+    const costMap = await this.executionRepository.sumCostByAutomationIdsInMonth({
+      automationIds: automationsWithLimits.map((a) => a.id),
+      monthStart,
+    });
+
+    return items.map((a) => {
+      if (a.monthlyCostLimitMicros == null) {
+        return { ...a, costLimitStatus: null };
+      }
+      const currentMonthCostMicros = costMap.get(a.id) ?? 0;
+      return {
+        ...a,
+        costLimitStatus: {
+          isCostLimitExceeded: currentMonthCostMicros >= a.monthlyCostLimitMicros,
+          currentMonthCostMicros,
+        },
+      };
+    });
   }
 
   async countByRepoId({ repoId }: { repoId: number }): Promise<number> {
@@ -428,6 +470,7 @@ export class AutomationService {
       resolvedPrompt,
       provider: automation.provider,
       model: automation.model,
+      monthlyCostLimitMicros: automation.monthlyCostLimitMicros,
     });
   }
 
@@ -484,6 +527,7 @@ export class AutomationService {
     provider: string;
     model: string | null;
     enabled: boolean;
+    monthlyCostLimitMicros: number | null;
   }> {
     const data: Partial<{
       name: string;
@@ -494,6 +538,7 @@ export class AutomationService {
       provider: string;
       model: string | null;
       enabled: boolean;
+      monthlyCostLimitMicros: number | null;
     }> = {};
     if (dto.name !== undefined)
       data.name = this.sanitization.sanitizeForStorage({
@@ -510,6 +555,8 @@ export class AutomationService {
     if (dto.enabled !== undefined) data.enabled = dto.enabled;
     if (dto.triggerType !== undefined) data.triggerType = dto.triggerType;
     if (dto.triggerConfig !== undefined) data.triggerConfig = dto.triggerConfig;
+    if (dto.monthlyCostLimitMicros !== undefined)
+      data.monthlyCostLimitMicros = dto.monthlyCostLimitMicros ?? null;
     return data;
   }
 
@@ -550,6 +597,26 @@ export class AutomationService {
         });
         break;
     }
+  }
+
+  private async computeCostLimitStatus({
+    automationId,
+    monthlyCostLimitMicros,
+  }: {
+    automationId: number;
+    monthlyCostLimitMicros: number | null;
+  }): Promise<CostLimitStatus | null> {
+    if (monthlyCostLimitMicros == null) return null;
+
+    const currentMonthCostMicros = await this.executionRepository.sumCostByAutomationInMonth({
+      automationId,
+      monthStart: getMonthStart(),
+    });
+
+    return {
+      isCostLimitExceeded: currentMonthCostMicros >= monthlyCostLimitMicros,
+      currentMonthCostMicros,
+    };
   }
 
   private async handleCronChanges({

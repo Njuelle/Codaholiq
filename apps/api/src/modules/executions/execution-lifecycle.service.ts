@@ -2,6 +2,11 @@ import { Injectable, Inject, Logger, NotFoundException, BadRequestException } fr
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { sql } from 'drizzle-orm';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { DRIZZLE } from '../../database/database.module';
+import * as schema from '../../database/schema';
+import { getMonthStart } from '../../common/date-utils';
 import { ExecutionRepository } from './executions.repository';
 import { GitHubEntityRepository } from '../github/github-entity.repository';
 import { GitHubApiService } from '../github/github-api.service';
@@ -31,6 +36,8 @@ export class ExecutionLifecycleService {
     private readonly executionQueue: Queue,
     @Inject(ConfigService)
     private readonly configService: ConfigService,
+    @Inject(DRIZZLE)
+    private readonly db: NodePgDatabase<typeof schema>,
   ) {
     this.maxConcurrentExecutionsPerOrg = parseInt(
       this.configService.get<string>('MAX_CONCURRENT_EXECUTIONS_PER_ORG') ?? '50',
@@ -47,6 +54,7 @@ export class ExecutionLifecycleService {
     resolvedPrompt,
     provider,
     model,
+    monthlyCostLimitMicros,
   }: {
     automationId: number;
     automationName: string;
@@ -56,6 +64,7 @@ export class ExecutionLifecycleService {
     resolvedPrompt: string;
     provider: string;
     model?: string | null;
+    monthlyCostLimitMicros?: number | null;
   }): Promise<typeof executions.$inferSelect> {
     // Look up orgId from the repo to enforce concurrent execution quota
     const repo = await this.githubEntityRepository.findRepositoryById({ id: repoId });
@@ -68,6 +77,20 @@ export class ExecutionLifecycleService {
           `Organization has reached the maximum of ${this.maxConcurrentExecutionsPerOrg} concurrent executions`,
         );
       }
+    }
+
+    // Check monthly cost limit before dispatching.
+    // Uses an advisory lock to prevent concurrent triggers from bypassing the limit.
+    if (monthlyCostLimitMicros != null) {
+      const blocked = await this.checkCostLimitWithLock({
+        automationId,
+        monthlyCostLimitMicros,
+        triggerEvent,
+        resolvedPrompt,
+        provider,
+        model,
+      });
+      if (blocked) return blocked;
     }
 
     const execution = await this.executionRepository.create({
@@ -166,7 +189,7 @@ export class ExecutionLifecycleService {
       throw new NotFoundException(`Execution ${executionId} not found`);
     }
 
-    const { execution, automationName, repoId } = result;
+    const { execution, automationName, repoId, monthlyCostLimitMicros } = result;
 
     if (!TERMINAL_STATUSES.has(execution.status)) {
       throw new BadRequestException(
@@ -183,6 +206,62 @@ export class ExecutionLifecycleService {
       resolvedPrompt: execution.resolvedPrompt,
       provider: execution.provider,
       model: execution.model,
+      monthlyCostLimitMicros,
+    });
+  }
+
+  private async checkCostLimitWithLock({
+    automationId,
+    monthlyCostLimitMicros,
+    triggerEvent,
+    resolvedPrompt,
+    provider,
+    model,
+  }: {
+    automationId: number;
+    monthlyCostLimitMicros: number;
+    triggerEvent?: Record<string, unknown> | null;
+    resolvedPrompt: string;
+    provider: string;
+    model?: string | null;
+  }): Promise<typeof executions.$inferSelect | null> {
+    return this.db.transaction(async (tx) => {
+      // Advisory lock scoped to this automation prevents concurrent cost-check bypass
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${automationId})`);
+
+      const monthStart = getMonthStart();
+      const currentCost = await this.executionRepository.sumCostByAutomationInMonth({
+        automationId,
+        monthStart,
+      });
+
+      if (currentCost < monthlyCostLimitMicros) return null;
+
+      const limitDollars = (monthlyCostLimitMicros / 1_000_000).toFixed(2);
+      const spentDollars = (currentCost / 1_000_000).toFixed(2);
+
+      const blockedExecution = await this.executionRepository.create({
+        automationId,
+        triggerEvent,
+        resolvedPrompt,
+        provider,
+        model,
+      });
+
+      await this.executionRepository.updateStatus({
+        id: blockedExecution.id,
+        status: 'cost_blocked',
+        fields: {
+          errorMessage: `Monthly cost limit exceeded: $${spentDollars} spent of $${limitDollars} limit`,
+          completedAt: new Date(),
+        },
+      });
+
+      this.logger.warn(
+        `Blocked execution ${blockedExecution.id} for automation ${automationId}: monthly cost limit exceeded ($${spentDollars}/$${limitDollars})`,
+      );
+
+      return { ...blockedExecution, status: 'cost_blocked' as const };
     });
   }
 

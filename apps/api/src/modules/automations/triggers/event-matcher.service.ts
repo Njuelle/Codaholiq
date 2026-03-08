@@ -217,6 +217,7 @@ export class EventMatcherService {
       resolvedPrompt,
       provider: automation.provider,
       model: automation.model,
+      monthlyCostLimitMicros: automation.monthlyCostLimitMicros,
     });
 
     this.logger.log(

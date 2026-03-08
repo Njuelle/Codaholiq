@@ -7,6 +7,7 @@ import {
   timestamp,
   boolean,
   jsonb,
+  bigint,
   index,
   unique,
   pgEnum,
@@ -38,6 +39,7 @@ export const automations = pgTable(
     model: varchar('model', { length: 100 }),
     workflowFile: varchar('workflow_file', { length: 255 }).notNull(),
     enabled: boolean('enabled').notNull().default(true),
+    monthlyCostLimitMicros: bigint('monthly_cost_limit_micros', { mode: 'number' }),
     createdBy: integer('created_by')
       .notNull()
       .references(() => users.id),

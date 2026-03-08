@@ -17,7 +17,13 @@ import {
 } from '@/common/components/ui/table';
 import { formatShortDate } from '@/common/lib/format';
 import type { Automation } from '@/common/types';
-import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { AlertTriangle, Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/common/components/ui/tooltip';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -76,12 +82,24 @@ export function AutomationTable({
             onClick={() => handleRowClick(automation)}
           >
             <TableCell className="font-medium">
-              <div>
-                <span>{automation.name}</span>
-                {automation.description && (
-                  <p className="text-muted-foreground text-xs mt-0.5 truncate max-w-xs">
-                    {automation.description}
-                  </p>
+              <div className="flex items-center gap-2">
+                <div>
+                  <span>{automation.name}</span>
+                  {automation.description && (
+                    <p className="text-muted-foreground text-xs mt-0.5 truncate max-w-xs">
+                      {automation.description}
+                    </p>
+                  )}
+                </div>
+                {automation.costLimitStatus?.isCostLimitExceeded && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <AlertTriangle className="size-4 shrink-0 text-amber-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>Monthly cost limit exceeded</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
             </TableCell>

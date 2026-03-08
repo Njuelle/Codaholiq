@@ -11,6 +11,7 @@ import { SanitizationService } from '../../../common/sanitization/sanitization.s
 import { VariablesService } from '../../variables/variables.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { ProvidersRegistry } from '../../providers/providers.registry';
+import { ExecutionRepository } from '../../executions/executions.repository';
 
 function createMockProvidersRegistry() {
   return {
@@ -42,6 +43,13 @@ function createMockCatalogService() {
   return {
     getCategories: vi.fn().mockReturnValue([]),
     getTemplateBySlug: vi.fn(),
+  };
+}
+
+function createMockExecutionRepository() {
+  return {
+    sumCostByAutomationInMonth: vi.fn().mockResolvedValue(0),
+    sumCostByAutomationIdsInMonth: vi.fn().mockResolvedValue(new Map()),
   };
 }
 
@@ -147,6 +155,7 @@ function makeAutomation(overrides: Record<string, unknown> = {}) {
 describe('AutomationService', () => {
   let service: AutomationService;
   let automationRepo: ReturnType<typeof createMockAutomationRepository>;
+  let executionRepo: ReturnType<typeof createMockExecutionRepository>;
   let executionLifecycle: ReturnType<typeof createMockExecutionLifecycle>;
   let githubRepo: ReturnType<typeof createMockGitHubEntityRepository>;
   let triggerValidation: ReturnType<typeof createMockTriggerValidation>;
@@ -158,6 +167,7 @@ describe('AutomationService', () => {
 
   beforeEach(() => {
     automationRepo = createMockAutomationRepository();
+    executionRepo = createMockExecutionRepository();
     executionLifecycle = createMockExecutionLifecycle();
     githubRepo = createMockGitHubEntityRepository();
     triggerValidation = createMockTriggerValidation();
@@ -169,6 +179,7 @@ describe('AutomationService', () => {
 
     service = new AutomationService(
       automationRepo as unknown as AutomationRepository,
+      executionRepo as unknown as ExecutionRepository,
       executionLifecycle as unknown as ExecutionLifecycleService,
       githubRepo as unknown as GitHubEntityRepository,
       triggerValidation as unknown as TriggerValidationService,
@@ -192,6 +203,7 @@ describe('AutomationService', () => {
       provider: 'claude-code' as const,
       model: null,
       enabled: true,
+      monthlyCostLimitMicros: null,
       variables: [],
     };
 
@@ -332,7 +344,7 @@ describe('AutomationService', () => {
 
       const result = await service.findById({ orgId: 10, automationId: 1 });
 
-      expect(result).toEqual(automation);
+      expect(result).toEqual({ ...automation, costLimitStatus: null });
     });
 
     it('should throw NotFoundException when not found', async () => {
@@ -359,7 +371,7 @@ describe('AutomationService', () => {
 
       const result = await service.list({ orgId: 10 });
 
-      expect(result).toEqual(automations);
+      expect(result).toEqual(automations.map((a) => ({ ...a, costLimitStatus: null })));
       expect(automationRepo.findByOrgId).toHaveBeenCalledWith({
         orgId: 10,
         filters: undefined,
@@ -691,6 +703,160 @@ describe('AutomationService', () => {
             'repo.full_name': 'octocat/hello-world',
             'automation.name': 'test-automation',
           }),
+        }),
+      );
+    });
+  });
+
+  describe('create with monthlyCostLimitMicros', () => {
+    it('should persist monthlyCostLimitMicros when provided', async () => {
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      const created = makeAutomation({ monthlyCostLimitMicros: 5_000_000 });
+      automationRepo.create.mockResolvedValue(created);
+
+      await service.create({
+        orgId: 10,
+        userId: 1,
+        dto: {
+          name: 'test-automation',
+          repoId: 100,
+          triggerType: 'event' as const,
+          triggerConfig: { events: ['pull_request.opened'] },
+          promptTemplate: 'Review {{pr.title}}',
+          provider: 'claude-code' as const,
+          model: null,
+          enabled: true,
+          monthlyCostLimitMicros: 5_000_000,
+          variables: [],
+        },
+      });
+
+      expect(automationRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          monthlyCostLimitMicros: 5_000_000,
+        }),
+      );
+    });
+  });
+
+  describe('update with monthlyCostLimitMicros', () => {
+    it('should include monthlyCostLimitMicros in update data', async () => {
+      const existing = makeAutomation({ monthlyCostLimitMicros: null });
+      automationRepo.findById.mockResolvedValue(existing);
+      executionRepo.sumCostByAutomationInMonth.mockResolvedValue(0);
+      const updated = { ...existing, monthlyCostLimitMicros: 10_000_000 };
+      automationRepo.update.mockResolvedValue(updated);
+
+      const result = await service.update({
+        orgId: 10,
+        automationId: 1,
+        dto: {
+          monthlyCostLimitMicros: 10_000_000,
+          triggerType: undefined,
+          triggerConfig: undefined,
+        },
+      });
+
+      expect(result.monthlyCostLimitMicros).toBe(10_000_000);
+      expect(automationRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            monthlyCostLimitMicros: 10_000_000,
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('findById with costLimitStatus', () => {
+    it('should return costLimitStatus when limit is set', async () => {
+      const automation = makeAutomation({ monthlyCostLimitMicros: 1_000_000 });
+      automationRepo.findById.mockResolvedValue(automation);
+      executionRepo.sumCostByAutomationInMonth.mockResolvedValue(500_000);
+
+      const result = await service.findById({ orgId: 10, automationId: 1 });
+
+      expect(result.costLimitStatus).toEqual({
+        isCostLimitExceeded: false,
+        currentMonthCostMicros: 500_000,
+      });
+    });
+
+    it('should return costLimitStatus with exceeded flag when cost >= limit', async () => {
+      const automation = makeAutomation({ monthlyCostLimitMicros: 1_000_000 });
+      automationRepo.findById.mockResolvedValue(automation);
+      executionRepo.sumCostByAutomationInMonth.mockResolvedValue(1_000_000);
+
+      const result = await service.findById({ orgId: 10, automationId: 1 });
+
+      expect(result.costLimitStatus).toEqual({
+        isCostLimitExceeded: true,
+        currentMonthCostMicros: 1_000_000,
+      });
+    });
+
+    it('should return null costLimitStatus when no limit is set', async () => {
+      const automation = makeAutomation({ monthlyCostLimitMicros: null });
+      automationRepo.findById.mockResolvedValue(automation);
+
+      const result = await service.findById({ orgId: 10, automationId: 1 });
+
+      expect(result.costLimitStatus).toBeNull();
+      expect(executionRepo.sumCostByAutomationInMonth).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('list with costLimitStatus', () => {
+    it('should enrich automations with costLimitStatus', async () => {
+      const automationWithLimit = makeAutomation({ id: 1, monthlyCostLimitMicros: 2_000_000 });
+      const automationWithoutLimit = makeAutomation({ id: 2, monthlyCostLimitMicros: null });
+      automationRepo.findByOrgId.mockResolvedValue([automationWithLimit, automationWithoutLimit]);
+
+      const costMap = new Map([[1, 800_000]]);
+      executionRepo.sumCostByAutomationIdsInMonth.mockResolvedValue(costMap);
+
+      const result = await service.list({ orgId: 10 });
+
+      expect(result).toHaveLength(2);
+      expect(result[0].costLimitStatus).toEqual({
+        isCostLimitExceeded: false,
+        currentMonthCostMicros: 800_000,
+      });
+      expect(result[1].costLimitStatus).toBeNull();
+    });
+
+    it('should skip cost lookup when no automations have limits', async () => {
+      const automations = [
+        makeAutomation({ id: 1, monthlyCostLimitMicros: null }),
+        makeAutomation({ id: 2, monthlyCostLimitMicros: null }),
+      ];
+      automationRepo.findByOrgId.mockResolvedValue(automations);
+
+      const result = await service.list({ orgId: 10 });
+
+      expect(result).toHaveLength(2);
+      expect(result[0].costLimitStatus).toBeNull();
+      expect(result[1].costLimitStatus).toBeNull();
+      expect(executionRepo.sumCostByAutomationIdsInMonth).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('triggerManual with cost limit', () => {
+    it('should pass monthlyCostLimitMicros to createAndQueue', async () => {
+      const automation = makeAutomation({ monthlyCostLimitMicros: 3_000_000 });
+      automationRepo.findById.mockResolvedValue(automation);
+      executionRepo.sumCostByAutomationInMonth.mockResolvedValue(0);
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+
+      await service.triggerManual({
+        orgId: 10,
+        automationId: 1,
+        userId: 1,
+      });
+
+      expect(executionLifecycle.createAndQueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          monthlyCostLimitMicros: 3_000_000,
         }),
       );
     });
