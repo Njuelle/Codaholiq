@@ -409,6 +409,20 @@ export const defaultHandlers = [
     });
   }),
 
+  http.get('/api/orgs/:orgId/repos/:repoId/model-policies', () => {
+    return HttpResponse.json({
+      data: { policies: [], isRestricted: false },
+      requestId: 'test-request-id',
+    });
+  }),
+
+  http.put('/api/orgs/:orgId/repos/:repoId/model-policies', () => {
+    return HttpResponse.json({
+      data: { policies: [], isRestricted: false },
+      requestId: 'test-request-id',
+    });
+  }),
+
   http.get('/api/automation-catalog', () => {
     return HttpResponse.json({
       data: {

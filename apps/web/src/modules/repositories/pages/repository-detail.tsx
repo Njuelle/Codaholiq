@@ -1,4 +1,5 @@
 import { SetupStatusCard } from '@/modules/repositories/components/setup-status-card';
+import { ModelPolicyCard } from '@/modules/repositories/components/model-policy-card';
 import { RepoAutomationsSection } from '@/modules/repositories/components/repo-automations-section';
 import { RepoExecutionsSection } from '@/modules/repositories/components/repo-executions-section';
 import { WebhookToggle } from '@/modules/repositories/components/webhook-toggle';
@@ -128,6 +129,12 @@ export function RepositoryDetailPage(): ReactElement {
               />
             </CardContent>
           </Card>
+
+          <ModelPolicyCard
+            orgId={orgId}
+            repoId={repoId}
+            canManage={hasPermission(Permission.MODEL_POLICIES_MANAGE)}
+          />
 
           <Card>
             <CardHeader>

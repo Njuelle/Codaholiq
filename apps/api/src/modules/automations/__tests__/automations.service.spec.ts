@@ -13,6 +13,7 @@ import { CatalogService } from '../catalog/catalog.service';
 import { ProvidersRegistry } from '../../providers/providers.registry';
 import { ExecutionRepository } from '../../executions/executions.repository';
 import { RepositoriesService } from '../../github/repositories.service';
+import { ModelPoliciesService } from '../../model-policies/model-policies.service';
 
 function createMockProvidersRegistry() {
   return {
@@ -208,6 +209,9 @@ describe('AutomationService', () => {
       catalogService as unknown as CatalogService,
       providersRegistry as unknown as ProvidersRegistry,
       repositoriesService as unknown as RepositoriesService,
+      {
+        validateModelAllowed: vi.fn().mockResolvedValue(undefined),
+      } as unknown as ModelPoliciesService,
       { get: vi.fn().mockReturnValue(undefined) } as unknown as ConfigService,
     );
   });

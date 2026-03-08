@@ -6,7 +6,11 @@ export type {
 } from '@/common/types/api';
 export type { User, AuthTokens, JwtPayload, Role } from '@/modules/auth/types';
 export type { Organization, OrgMember, OrgDetail } from '@/modules/organizations/types';
-export type { Repository } from '@/modules/repositories/types';
+export type {
+  Repository,
+  ModelPolicyEntry,
+  ModelPoliciesResponse,
+} from '@/modules/repositories/types';
 export type {
   Automation,
   AutomationWithVariables,

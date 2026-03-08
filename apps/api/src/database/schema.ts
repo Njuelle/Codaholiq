@@ -9,6 +9,7 @@ export * from '../modules/audit/audit.schema';
 export * from '../modules/variables/variables.schema';
 export * from '../modules/notifications/notifications.schema';
 export * from '../modules/permissions/permissions.schema';
+export * from '../modules/model-policies/model-policies.schema';
 
 // --- Relations (defined here to avoid circular imports between modules) ---
 
@@ -21,6 +22,7 @@ import { executions, executionLogs } from '../modules/executions/executions.sche
 import { auditLogs } from '../modules/audit/audit.schema';
 import { sharedVariables } from '../modules/variables/variables.schema';
 import { notifications } from '../modules/notifications/notifications.schema';
+import { modelPolicies } from '../modules/model-policies/model-policies.schema';
 
 export const usersRelations = relations(users, ({ many }) => ({
   refreshTokens: many(refreshTokens),
@@ -74,6 +76,7 @@ export const repositoriesRelations = relations(repositories, ({ one, many }) => 
   }),
   automations: many(automations),
   sharedVariables: many(sharedVariables),
+  modelPolicies: many(modelPolicies),
 }));
 
 export const automationsRelations = relations(automations, ({ one, many }) => ({
@@ -152,5 +155,20 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   execution: one(executions, {
     fields: [notifications.executionId],
     references: [executions.id],
+  }),
+}));
+
+export const modelPoliciesRelations = relations(modelPolicies, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [modelPolicies.orgId],
+    references: [organizations.id],
+  }),
+  repository: one(repositories, {
+    fields: [modelPolicies.repoId],
+    references: [repositories.id],
+  }),
+  creator: one(users, {
+    fields: [modelPolicies.createdBy],
+    references: [users.id],
   }),
 }));

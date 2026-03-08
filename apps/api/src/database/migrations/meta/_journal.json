@@ -43,6 +43,13 @@
       "when": 1772958226642,
       "tag": "0005_aromatic_rattler",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772998899402,
+      "tag": "0006_strong_lord_tyger",
+      "breakpoints": true
     }
   ]
 }

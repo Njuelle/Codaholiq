@@ -19,6 +19,7 @@ import { SanitizationService } from '../../common/sanitization/sanitization.serv
 import { VariablesService } from '../variables/variables.service';
 import { CatalogService } from './catalog/catalog.service';
 import { ProvidersRegistry, DEFAULT_PROVIDER_ID } from '../providers/providers.registry';
+import { ModelPoliciesService } from '../model-policies/model-policies.service';
 import { RepositoriesService } from '../github/repositories.service';
 import { AutomationCreateDto } from './dto/create-automation.dto';
 import { AutomationUpdateDto } from './dto/update-automation.dto';
@@ -65,6 +66,8 @@ export class AutomationService {
     private readonly providersRegistry: ProvidersRegistry,
     @Inject(forwardRef(() => RepositoriesService))
     private readonly repositoriesService: RepositoriesService,
+    @Inject(ModelPoliciesService)
+    private readonly modelPoliciesService: ModelPoliciesService,
     @Inject(ConfigService)
     private readonly configService: ConfigService,
   ) {
@@ -196,6 +199,12 @@ export class AutomationService {
       repoId: dto.repoId,
       provider,
       model: dto.model,
+    });
+    await this.modelPoliciesService.validateModelAllowed({
+      orgId,
+      repoId: dto.repoId,
+      provider,
+      model: dto.model ?? this.providersRegistry.getByIdOrThrow(provider).defaultModelId,
     });
 
     this.promptTemplate.validateTemplate({ template: dto.promptTemplate });
@@ -360,6 +369,13 @@ export class AutomationService {
         repoId: existing.repoId,
         provider: effectiveProvider,
         model: effectiveModel,
+      });
+      await this.modelPoliciesService.validateModelAllowed({
+        orgId,
+        repoId: existing.repoId,
+        provider: effectiveProvider,
+        model:
+          effectiveModel ?? this.providersRegistry.getByIdOrThrow(effectiveProvider).defaultModelId,
       });
     }
 

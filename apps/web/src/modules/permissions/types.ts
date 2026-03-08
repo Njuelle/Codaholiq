@@ -13,6 +13,7 @@ export enum Permission {
   ORG_MEMBERS_MANAGE = 'org.members.manage',
   NOTIFICATIONS_VIEW = 'notifications.view',
   NOTIFICATIONS_DISMISS = 'notifications.dismiss',
+  MODEL_POLICIES_MANAGE = 'model-policies.manage',
 }
 
 export const ALL_PERMISSIONS: readonly Permission[] = Object.values(Permission);
@@ -34,6 +35,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Readonly<
     Permission.ORG_MEMBERS_VIEW,
     Permission.NOTIFICATIONS_VIEW,
     Permission.NOTIFICATIONS_DISMISS,
+    Permission.MODEL_POLICIES_MANAGE,
   ],
   member: [
     Permission.AUTOMATIONS_VIEW,

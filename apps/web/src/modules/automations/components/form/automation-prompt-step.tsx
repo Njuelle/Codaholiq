@@ -13,6 +13,7 @@ import { ProviderModelSelector } from '@/modules/automations/components/form/pro
 import { useGitHubEvents } from '@/modules/automations/hooks/use-github-events';
 import { useOrg } from '@/modules/organizations/hooks/use-org';
 import { useSetupStatus } from '@/modules/repositories/hooks/use-setup-status';
+import { useModelPolicies } from '@/modules/repositories/hooks/use-model-policies';
 import { useSharedVariables } from '@/modules/variables/hooks/use-shared-variables';
 import type { AutomationFormValues } from '@/modules/automations/lib/automation-schemas';
 import { getAvailableVariables } from '@/modules/variables/lib/variable-catalog';
@@ -44,6 +45,8 @@ export function AutomationPromptStep({
     orgId,
     repoId,
   });
+
+  const { policies: modelPolicies } = useModelPolicies({ orgId, repoId });
 
   const configuredProviderIds = useMemo(
     () => providerSecrets?.filter((p) => p.configured).map((p) => p.providerId),
@@ -97,6 +100,7 @@ export function AutomationPromptStep({
         configuredProviderIds={configuredProviderIds}
         availableSecretNames={availableSecretNames}
         isLoadingSetupStatus={isLoadingSetupStatus}
+        modelPolicies={modelPolicies.length > 0 ? modelPolicies : undefined}
       />
 
       <div className="space-y-4">

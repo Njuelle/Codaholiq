@@ -16,6 +16,7 @@ import {
 import { useProviders } from '@/modules/automations/hooks/use-providers';
 import type { AutomationFormValues } from '@/modules/automations/lib/automation-schemas';
 import { DEFAULT_MODEL_SENTINEL } from '@/modules/automations/lib/constants';
+import type { ModelPolicyEntry } from '@/modules/repositories/types';
 import { useEffect, useMemo, type ReactElement } from 'react';
 import type { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 
@@ -26,6 +27,7 @@ interface ProviderModelSelectorProps {
   readonly configuredProviderIds?: readonly string[];
   readonly availableSecretNames?: ReadonlySet<string>;
   readonly isLoadingSetupStatus?: boolean;
+  readonly modelPolicies?: readonly Pick<ModelPolicyEntry, 'provider' | 'model'>[];
 }
 
 export function ProviderModelSelector({
@@ -35,14 +37,24 @@ export function ProviderModelSelector({
   configuredProviderIds,
   availableSecretNames,
   isLoadingSetupStatus,
+  modelPolicies,
 }: ProviderModelSelectorProps): ReactElement {
   const { providers, getModelsForProvider, getDefaultModelId } = useProviders();
   const selectedProvider = watch('provider');
 
+  const policySet = useMemo(() => {
+    if (!modelPolicies || modelPolicies.length === 0) return null;
+    return new Set(modelPolicies.map((p) => `${p.provider}:${p.model}`));
+  }, [modelPolicies]);
+
   const availableProviders = useMemo(() => {
-    if (!configuredProviderIds) return providers;
-    return providers.filter((p) => configuredProviderIds.includes(p.id));
-  }, [providers, configuredProviderIds]);
+    const byConfig = configuredProviderIds
+      ? providers.filter((p) => configuredProviderIds.includes(p.id))
+      : providers;
+    return policySet
+      ? byConfig.filter((p) => p.models.some((m) => policySet.has(`${p.id}:${m.id}`)))
+      : byConfig;
+  }, [providers, configuredProviderIds, policySet]);
 
   useEffect(() => {
     if (!configuredProviderIds) return;
@@ -60,9 +72,13 @@ export function ProviderModelSelector({
   );
 
   const models = useMemo(() => {
-    if (!availableSecretNames) return allModels;
-    return allModels.filter((m) => !m.requiredSecret || availableSecretNames.has(m.requiredSecret));
-  }, [allModels, availableSecretNames]);
+    const bySecret = availableSecretNames
+      ? allModels.filter((m) => !m.requiredSecret || availableSecretNames.has(m.requiredSecret))
+      : allModels;
+    return policySet
+      ? bySecret.filter((m) => policySet.has(`${selectedProvider}:${m.id}`))
+      : bySecret;
+  }, [allModels, availableSecretNames, policySet, selectedProvider]);
 
   const defaultModelName = useMemo(() => {
     const defaultId = getDefaultModelId(selectedProvider);

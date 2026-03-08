@@ -13,6 +13,8 @@ export const queryKeys = {
       ['orgs', orgId, 'repos', repoId] as const,
     setupStatus: ({ orgId, repoId }: { orgId: number; repoId: number | null }) =>
       ['orgs', orgId, 'repos', repoId, 'setup-status'] as const,
+    modelPolicies: ({ orgId, repoId }: { orgId: number; repoId: number }) =>
+      ['orgs', orgId, 'repos', repoId, 'model-policies'] as const,
   },
   automations: {
     all: (orgId: number) => ['orgs', orgId, 'automations'] as const,

@@ -14,3 +14,15 @@ export interface Repository {
   readonly createdAt: string;
   readonly updatedAt: string;
 }
+
+export interface ModelPolicyEntry {
+  readonly provider: string;
+  readonly model: string;
+  readonly createdAt: string;
+  readonly createdBy: number;
+}
+
+export interface ModelPoliciesResponse {
+  readonly policies: readonly ModelPolicyEntry[];
+  readonly isRestricted: boolean;
+}

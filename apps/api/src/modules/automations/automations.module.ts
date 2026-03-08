@@ -4,6 +4,7 @@ import { GitHubModule } from '../github/github.module';
 import { ExecutionsModule } from '../executions/executions.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { VariablesModule } from '../variables/variables.module';
+import { ModelPoliciesModule } from '../model-policies/model-policies.module';
 import { AutomationsController } from './automations.controller';
 import { GitHubEventsController } from './triggers/github-events.controller';
 import { ModelsController } from './models.controller';
@@ -27,6 +28,7 @@ import { JobFailureTrackerService } from '../../common/monitoring/job-failure-tr
     forwardRef(() => ExecutionsModule),
     forwardRef(() => OrganizationsModule),
     VariablesModule,
+    ModelPoliciesModule,
   ],
   controllers: [AutomationsController, GitHubEventsController, ModelsController, CatalogController],
   providers: [
