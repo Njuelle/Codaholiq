@@ -12,6 +12,7 @@ import { Label } from '@/common/components/ui/label';
 import { ProviderModelSelector } from '@/modules/automations/components/form/provider-model-selector';
 import { useGitHubEvents } from '@/modules/automations/hooks/use-github-events';
 import { useOrg } from '@/modules/organizations/hooks/use-org';
+import { useSetupStatus } from '@/modules/repositories/hooks/use-setup-status';
 import { useSharedVariables } from '@/modules/variables/hooks/use-shared-variables';
 import type { AutomationFormValues } from '@/modules/automations/lib/automation-schemas';
 import { getAvailableVariables } from '@/modules/variables/lib/variable-catalog';
@@ -38,6 +39,27 @@ export function AutomationPromptStep({
   const triggerType = watch('triggerType');
   const triggerConfig = watch('triggerConfig');
   const repoId = watch('repoId');
+
+  const { providerSecrets, isLoading: isLoadingSetupStatus } = useSetupStatus({
+    orgId,
+    repoId,
+  });
+
+  const configuredProviderIds = useMemo(
+    () => providerSecrets?.filter((p) => p.configured).map((p) => p.providerId),
+    [providerSecrets],
+  );
+
+  const availableSecretNames = useMemo(() => {
+    if (!providerSecrets) return undefined;
+    const names = new Set<string>();
+    for (const ps of providerSecrets) {
+      for (const s of ps.secrets) {
+        if (s.exists) names.add(s.name);
+      }
+    }
+    return names;
+  }, [providerSecrets]);
 
   const selectedEvents = useMemo((): readonly string[] => {
     if (triggerType === 'event' && 'events' in triggerConfig) {
@@ -68,7 +90,14 @@ export function AutomationPromptStep({
 
   return (
     <div className="space-y-8">
-      <ProviderModelSelector control={control} watch={watch} setValue={setValue} />
+      <ProviderModelSelector
+        control={control}
+        watch={watch}
+        setValue={setValue}
+        configuredProviderIds={configuredProviderIds}
+        availableSecretNames={availableSecretNames}
+        isLoadingSetupStatus={isLoadingSetupStatus}
+      />
 
       <div className="space-y-4">
         <div>

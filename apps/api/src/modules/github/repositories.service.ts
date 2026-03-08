@@ -1,4 +1,11 @@
-import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+  forwardRef,
+} from '@nestjs/common';
 import { GitHubEntityRepository } from './github-entity.repository';
 import { GitHubApiService } from './github-api.service';
 import { RepoSyncService } from './repo-sync.service';
@@ -28,7 +35,7 @@ export class RepositoriesService {
     private readonly githubApiService: GitHubApiService,
     @Inject(RepoSyncService)
     private readonly repoSyncService: RepoSyncService,
-    @Inject(AutomationService)
+    @Inject(forwardRef(() => AutomationService))
     private readonly automationService: AutomationService,
     @Inject(ProvidersRegistry)
     private readonly providersRegistry: ProvidersRegistry,

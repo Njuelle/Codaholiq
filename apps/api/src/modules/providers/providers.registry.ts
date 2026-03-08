@@ -48,36 +48,43 @@ const OPENCODE: ProviderDefinition = {
       id: 'anthropic/claude-sonnet-4-20250514',
       name: 'Claude Sonnet 4 (via OpenCode)',
       description: 'Balanced speed and capability',
+      requiredSecret: 'ANTHROPIC_API_KEY',
     },
     {
       id: 'anthropic/claude-opus-4-20250514',
       name: 'Claude Opus 4 (via OpenCode)',
       description: 'Most capable Anthropic model',
+      requiredSecret: 'ANTHROPIC_API_KEY',
     },
     {
       id: 'openai/gpt-4.1',
       name: 'GPT-4.1 (via OpenCode)',
       description: 'OpenAI flagship model',
+      requiredSecret: 'OPENAI_API_KEY',
     },
     {
       id: 'openai/gpt-4.1-mini',
       name: 'GPT-4.1 Mini (via OpenCode)',
       description: 'Fast and cost-effective OpenAI model',
+      requiredSecret: 'OPENAI_API_KEY',
     },
     {
       id: 'openai/o4-mini',
       name: 'o4-mini (via OpenCode)',
       description: 'OpenAI reasoning model',
+      requiredSecret: 'OPENAI_API_KEY',
     },
     {
       id: 'google/gemini-2.5-pro',
       name: 'Gemini 2.5 Pro (via OpenCode)',
       description: 'Google flagship model',
+      requiredSecret: 'GEMINI_API_KEY',
     },
     {
       id: 'google/gemini-2.5-flash',
       name: 'Gemini 2.5 Flash (via OpenCode)',
       description: 'Fast and efficient Google model',
+      requiredSecret: 'GEMINI_API_KEY',
     },
     {
       id: 'deepseek/deepseek-chat',

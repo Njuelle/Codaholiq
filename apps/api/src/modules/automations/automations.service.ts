@@ -5,6 +5,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AutomationRepository } from './automations.repository';
@@ -18,6 +19,7 @@ import { SanitizationService } from '../../common/sanitization/sanitization.serv
 import { VariablesService } from '../variables/variables.service';
 import { CatalogService } from './catalog/catalog.service';
 import { ProvidersRegistry, DEFAULT_PROVIDER_ID } from '../providers/providers.registry';
+import { RepositoriesService } from '../github/repositories.service';
 import { AutomationCreateDto } from './dto/create-automation.dto';
 import { AutomationUpdateDto } from './dto/update-automation.dto';
 import type { ValidatePromptDto } from './dto/validate-prompt.dto';
@@ -61,6 +63,8 @@ export class AutomationService {
     private readonly catalogService: CatalogService,
     @Inject(ProvidersRegistry)
     private readonly providersRegistry: ProvidersRegistry,
+    @Inject(forwardRef(() => RepositoriesService))
+    private readonly repositoriesService: RepositoriesService,
     @Inject(ConfigService)
     private readonly configService: ConfigService,
   ) {
@@ -187,6 +191,12 @@ export class AutomationService {
 
     const provider = dto.provider ?? DEFAULT_PROVIDER_ID;
     this.validateProviderAndModel({ provider, model: dto.model });
+    await this.validateProviderConfigured({
+      orgId,
+      repoId: dto.repoId,
+      provider,
+      model: dto.model,
+    });
 
     this.promptTemplate.validateTemplate({ template: dto.promptTemplate });
 
@@ -339,9 +349,17 @@ export class AutomationService {
     }
 
     if (dto.provider !== undefined || dto.model !== undefined) {
+      const effectiveProvider = dto.provider ?? existing.provider;
       this.validateProviderAndModel({
-        provider: dto.provider ?? existing.provider,
+        provider: effectiveProvider,
         model: dto.model !== undefined ? dto.model : existing.model,
+      });
+      const effectiveModel = dto.model !== undefined ? dto.model : existing.model;
+      await this.validateProviderConfigured({
+        orgId,
+        repoId: existing.repoId,
+        provider: effectiveProvider,
+        model: effectiveModel,
       });
     }
 
@@ -570,6 +588,41 @@ export class AutomationService {
     this.providersRegistry.getByIdOrThrow(provider);
     if (model && !this.providersRegistry.validateModel({ providerId: provider, modelId: model })) {
       throw new BadRequestException(`Model "${model}" is not valid for provider "${provider}"`);
+    }
+  }
+
+  private async validateProviderConfigured({
+    orgId,
+    repoId,
+    provider,
+    model,
+  }: {
+    orgId: number;
+    repoId: number;
+    provider: string;
+    model?: string | null;
+  }): Promise<void> {
+    const setupStatus = await this.repositoriesService.getSetupStatus({ orgId, repoId });
+    const providerStatus = setupStatus.providerSecrets.find((p) => p.providerId === provider);
+    if (!providerStatus || !providerStatus.configured) {
+      throw new BadRequestException(
+        `Provider "${provider}" is not configured on this repository. Please add the required secrets first.`,
+      );
+    }
+
+    if (model) {
+      const providerDef = this.providersRegistry.getByIdOrThrow(provider);
+      const modelDef = providerDef.models.find((m) => m.id === model);
+      if (modelDef?.requiredSecret) {
+        const secretExists = providerStatus.secrets.some(
+          (s) => s.name === modelDef.requiredSecret && s.exists,
+        );
+        if (!secretExists) {
+          throw new BadRequestException(
+            `Model "${model}" requires the ${modelDef.requiredSecret} secret, which is not configured on this repository.`,
+          );
+        }
+      }
     }
   }
 

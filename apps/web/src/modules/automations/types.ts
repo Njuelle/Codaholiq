@@ -46,6 +46,7 @@ export interface ProviderModel {
   readonly id: string;
   readonly name: string;
   readonly description: string;
+  readonly requiredSecret?: string;
 }
 
 export interface SecretRequirement {

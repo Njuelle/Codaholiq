@@ -42,11 +42,21 @@ function TestWrapper({
   );
 }
 
-function renderSelector(defaultValues?: Partial<AutomationFormValues>, showSpy?: boolean) {
+function renderSelector(
+  defaultValues?: Partial<AutomationFormValues>,
+  showSpy?: boolean,
+  props?: { configuredProviderIds?: readonly string[]; isLoadingSetupStatus?: boolean },
+) {
   return renderWithProviders(
     <TestWrapper defaultValues={defaultValues} showSpy={showSpy}>
       {(form) => (
-        <ProviderModelSelector control={form.control} watch={form.watch} setValue={form.setValue} />
+        <ProviderModelSelector
+          control={form.control}
+          watch={form.watch}
+          setValue={form.setValue}
+          configuredProviderIds={props?.configuredProviderIds}
+          isLoadingSetupStatus={props?.isLoadingSetupStatus}
+        />
       )}
     </TestWrapper>,
   );
@@ -123,6 +133,46 @@ describe('ProviderModelSelector', () => {
     // Model should be reset to null (empty string in data attribute) after provider change
     await waitFor(() => {
       expect(screen.getByTestId('form-values')).toHaveAttribute('data-model', '');
+    });
+  });
+
+  it('should only show configured providers when configuredProviderIds is provided', async () => {
+    renderSelector(undefined, false, { configuredProviderIds: ['claude-code'] });
+
+    await waitFor(() => {
+      expect(screen.getByText('Claude Code')).toBeInTheDocument();
+    });
+
+    // Open provider dropdown
+    const user = userEvent.setup();
+    const comboboxes = screen.getAllByRole('combobox');
+    await user.click(comboboxes[0]!);
+
+    // Should only show Claude Code, not Codex
+    expect(screen.queryByRole('option', { name: 'OpenAI Codex' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Claude Code' })).toBeInTheDocument();
+  });
+
+  it('should show no-providers message when no providers are configured', async () => {
+    renderSelector(undefined, false, { configuredProviderIds: [] });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/No providers are configured on this repository/),
+      ).toBeInTheDocument();
+    });
+
+    // Should not show provider/model selects
+    expect(screen.queryByText('Provider')).not.toBeInTheDocument();
+    expect(screen.queryByText('Model')).not.toBeInTheDocument();
+  });
+
+  it('should reset provider when current provider is no longer configured', async () => {
+    renderSelector({ provider: 'codex' }, true, { configuredProviderIds: ['claude-code'] });
+
+    // Provider should auto-reset to claude-code (first available)
+    await waitFor(() => {
+      expect(screen.getByTestId('form-values')).toHaveAttribute('data-provider', 'claude-code');
     });
   });
 });

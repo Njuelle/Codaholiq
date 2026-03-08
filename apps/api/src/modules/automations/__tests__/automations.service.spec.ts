@@ -12,6 +12,7 @@ import { VariablesService } from '../../variables/variables.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { ProvidersRegistry } from '../../providers/providers.registry';
 import { ExecutionRepository } from '../../executions/executions.repository';
+import { RepositoriesService } from '../../github/repositories.service';
 
 function createMockProvidersRegistry() {
   return {
@@ -110,6 +111,19 @@ function createMockCronScheduler() {
   };
 }
 
+function createMockRepositoriesService() {
+  return {
+    getSetupStatus: vi.fn().mockResolvedValue({
+      providerSecrets: [
+        { providerId: 'claude-code', providerName: 'Claude Code', configured: true, secrets: [] },
+        { providerId: 'codex', providerName: 'OpenAI Codex', configured: false, secrets: [] },
+        { providerId: 'gemini', providerName: 'Gemini CLI', configured: false, secrets: [] },
+        { providerId: 'opencode', providerName: 'OpenCode', configured: false, secrets: [] },
+      ],
+    }),
+  };
+}
+
 function makeRepo(overrides: Record<string, unknown> = {}) {
   return {
     id: 100,
@@ -164,6 +178,8 @@ describe('AutomationService', () => {
   let catalogService: ReturnType<typeof createMockCatalogService>;
   let sanitizationService: ReturnType<typeof createMockSanitizationService>;
   let variablesService: ReturnType<typeof createMockVariablesService>;
+  let repositoriesService: ReturnType<typeof createMockRepositoriesService>;
+  let providersRegistry: ReturnType<typeof createMockProvidersRegistry>;
 
   beforeEach(() => {
     automationRepo = createMockAutomationRepository();
@@ -176,6 +192,8 @@ describe('AutomationService', () => {
     catalogService = createMockCatalogService();
     sanitizationService = createMockSanitizationService();
     variablesService = createMockVariablesService();
+    repositoriesService = createMockRepositoriesService();
+    providersRegistry = createMockProvidersRegistry();
 
     service = new AutomationService(
       automationRepo as unknown as AutomationRepository,
@@ -188,7 +206,8 @@ describe('AutomationService', () => {
       sanitizationService as unknown as SanitizationService,
       variablesService as unknown as VariablesService,
       catalogService as unknown as CatalogService,
-      createMockProvidersRegistry() as unknown as ProvidersRegistry,
+      providersRegistry as unknown as ProvidersRegistry,
+      repositoriesService as unknown as RepositoriesService,
       { get: vi.fn().mockReturnValue(undefined) } as unknown as ConfigService,
     );
   });
@@ -333,6 +352,81 @@ describe('AutomationService', () => {
 
       await expect(service.create({ orgId: 10, userId: 1, dto: eventDto })).rejects.toThrow(
         'Unbalanced braces',
+      );
+    });
+
+    it('should reject creation when provider is not configured on repo', async () => {
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repositoriesService.getSetupStatus.mockResolvedValue({
+        providerSecrets: [
+          {
+            providerId: 'claude-code',
+            configured: false,
+            providerName: 'Claude Code',
+            secrets: [],
+          },
+        ],
+      });
+
+      await expect(service.create({ orgId: 10, userId: 1, dto: eventDto })).rejects.toThrow(
+        'Provider "claude-code" is not configured on this repository',
+      );
+    });
+
+    it('should allow creation when provider is configured on repo', async () => {
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repositoriesService.getSetupStatus.mockResolvedValue({
+        providerSecrets: [
+          { providerId: 'claude-code', configured: true, providerName: 'Claude Code', secrets: [] },
+        ],
+      });
+      const created = makeAutomation();
+      automationRepo.create.mockResolvedValue(created);
+
+      const result = await service.create({ orgId: 10, userId: 1, dto: eventDto });
+
+      expect(result).toEqual(created);
+    });
+
+    it('should reject creation when model requires a secret that is not configured', async () => {
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      providersRegistry.getByIdOrThrow.mockReturnValue({
+        id: 'opencode',
+        name: 'OpenCode',
+        models: [
+          {
+            id: 'openai/gpt-4.1',
+            name: 'GPT-4.1',
+            description: 'test',
+            requiredSecret: 'OPENAI_API_KEY',
+          },
+        ],
+        defaultModelId: 'openai/gpt-4.1',
+        secrets: [],
+        modelIdPattern: /^[a-z0-9-]+\/[a-z0-9._-]+$/,
+      });
+      repositoriesService.getSetupStatus.mockResolvedValue({
+        providerSecrets: [
+          {
+            providerId: 'opencode',
+            configured: true,
+            providerName: 'OpenCode',
+            secrets: [
+              { name: 'ANTHROPIC_API_KEY', exists: true },
+              { name: 'OPENAI_API_KEY', exists: false },
+            ],
+          },
+        ],
+      });
+
+      const dto = {
+        ...eventDto,
+        provider: 'opencode' as const,
+        model: 'openai/gpt-4.1',
+      };
+
+      await expect(service.create({ orgId: 10, userId: 1, dto })).rejects.toThrow(
+        'Model "openai/gpt-4.1" requires the OPENAI_API_KEY secret',
       );
     });
   });
@@ -499,6 +593,44 @@ describe('AutomationService', () => {
           },
         }),
       ).rejects.toThrow('Cron schedule interval must be at least 5 minutes');
+    });
+
+    it('should reject update when changing to unconfigured provider', async () => {
+      const existing = makeAutomation();
+      automationRepo.findById.mockResolvedValue(existing);
+      repositoriesService.getSetupStatus.mockResolvedValue({
+        providerSecrets: [
+          { providerId: 'claude-code', configured: true, providerName: 'Claude Code', secrets: [] },
+          { providerId: 'codex', configured: false, providerName: 'OpenAI Codex', secrets: [] },
+        ],
+      });
+
+      await expect(
+        service.update({
+          orgId: 10,
+          automationId: 1,
+          dto: { provider: 'codex', triggerType: undefined, triggerConfig: undefined },
+        }),
+      ).rejects.toThrow('Provider "codex" is not configured on this repository');
+    });
+
+    it('should allow update when provider is configured on repo', async () => {
+      const existing = makeAutomation();
+      automationRepo.findById.mockResolvedValue(existing);
+      automationRepo.update.mockResolvedValue({ ...existing, provider: 'codex' });
+      repositoriesService.getSetupStatus.mockResolvedValue({
+        providerSecrets: [
+          { providerId: 'codex', configured: true, providerName: 'OpenAI Codex', secrets: [] },
+        ],
+      });
+
+      const result = await service.update({
+        orgId: 10,
+        automationId: 1,
+        dto: { provider: 'codex', triggerType: undefined, triggerConfig: undefined },
+      });
+
+      expect(result.provider).toBe('codex');
     });
 
     it('should enforce org scoping', async () => {
@@ -978,6 +1110,11 @@ describe('AutomationService', () => {
       catalogService.getTemplateBySlug.mockReturnValue(mockTemplate);
       githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
       automationRepo.create.mockResolvedValue(makeAutomation({ provider: 'codex' }));
+      repositoriesService.getSetupStatus.mockResolvedValue({
+        providerSecrets: [
+          { providerId: 'codex', configured: true, providerName: 'OpenAI Codex', secrets: [] },
+        ],
+      });
 
       await service.createFromTemplate({
         orgId: 10,
@@ -1040,6 +1177,30 @@ describe('AutomationService', () => {
       });
 
       expect(automationRepo.create).toHaveBeenCalledWith(expect.objectContaining({ model: null }));
+    });
+
+    it('should reject createFromTemplate when provider is not configured on repo', async () => {
+      catalogService.getTemplateBySlug.mockReturnValue(mockTemplate);
+      githubRepo.findRepositoryById.mockResolvedValue(makeRepo());
+      repositoriesService.getSetupStatus.mockResolvedValue({
+        providerSecrets: [
+          {
+            providerId: 'claude-code',
+            configured: false,
+            providerName: 'Claude Code',
+            secrets: [],
+          },
+        ],
+      });
+
+      await expect(
+        service.createFromTemplate({
+          orgId: 10,
+          userId: 1,
+          templateSlug: 'pr-code-review',
+          repoId: 100,
+        }),
+      ).rejects.toThrow('Provider "claude-code" is not configured on this repository');
     });
   });
 });

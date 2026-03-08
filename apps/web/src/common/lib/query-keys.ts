@@ -11,7 +11,7 @@ export const queryKeys = {
     all: (orgId: number) => ['orgs', orgId, 'repos'] as const,
     detail: ({ orgId, repoId }: { orgId: number; repoId: number }) =>
       ['orgs', orgId, 'repos', repoId] as const,
-    setupStatus: ({ orgId, repoId }: { orgId: number; repoId: number }) =>
+    setupStatus: ({ orgId, repoId }: { orgId: number; repoId: number | null }) =>
       ['orgs', orgId, 'repos', repoId, 'setup-status'] as const,
   },
   automations: {

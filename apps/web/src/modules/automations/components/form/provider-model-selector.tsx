@@ -15,36 +15,70 @@ import {
 } from '@/common/components/ui/select';
 import { useProviders } from '@/modules/automations/hooks/use-providers';
 import type { AutomationFormValues } from '@/modules/automations/lib/automation-schemas';
-import { useMemo, type ReactElement } from 'react';
+import { DEFAULT_MODEL_SENTINEL } from '@/modules/automations/lib/constants';
+import { useEffect, useMemo, type ReactElement } from 'react';
 import type { Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
-
-const DEFAULT_MODEL_SENTINEL = '__default__';
 
 interface ProviderModelSelectorProps {
   readonly control: Control<AutomationFormValues>;
   readonly watch: UseFormWatch<AutomationFormValues>;
   readonly setValue: UseFormSetValue<AutomationFormValues>;
+  readonly configuredProviderIds?: readonly string[];
+  readonly availableSecretNames?: ReadonlySet<string>;
+  readonly isLoadingSetupStatus?: boolean;
 }
 
 export function ProviderModelSelector({
   control,
   watch,
   setValue,
+  configuredProviderIds,
+  availableSecretNames,
+  isLoadingSetupStatus,
 }: ProviderModelSelectorProps): ReactElement {
   const { providers, getModelsForProvider, getDefaultModelId } = useProviders();
   const selectedProvider = watch('provider');
 
-  const models = useMemo(
+  const availableProviders = useMemo(() => {
+    if (!configuredProviderIds) return providers;
+    return providers.filter((p) => configuredProviderIds.includes(p.id));
+  }, [providers, configuredProviderIds]);
+
+  useEffect(() => {
+    if (!configuredProviderIds) return;
+    const isCurrentProviderAvailable = availableProviders.some((p) => p.id === selectedProvider);
+    const firstProvider = availableProviders[0];
+    if (!isCurrentProviderAvailable && firstProvider && firstProvider.id !== selectedProvider) {
+      setValue('provider', firstProvider.id);
+      setValue('model', null);
+    }
+  }, [availableProviders, configuredProviderIds, selectedProvider, setValue]);
+
+  const allModels = useMemo(
     () => getModelsForProvider(selectedProvider),
     [getModelsForProvider, selectedProvider],
   );
 
+  const models = useMemo(() => {
+    if (!availableSecretNames) return allModels;
+    return allModels.filter((m) => !m.requiredSecret || availableSecretNames.has(m.requiredSecret));
+  }, [allModels, availableSecretNames]);
+
   const defaultModelName = useMemo(() => {
     const defaultId = getDefaultModelId(selectedProvider);
     if (!defaultId) return 'Default';
-    const model = models.find((m) => m.id === defaultId);
+    const model = allModels.find((m) => m.id === defaultId);
     return model ? `Default (${model.name})` : 'Default';
-  }, [getDefaultModelId, selectedProvider, models]);
+  }, [getDefaultModelId, selectedProvider, allModels]);
+
+  if (configuredProviderIds && !isLoadingSetupStatus && availableProviders.length === 0) {
+    return (
+      <p className="max-w-lg text-sm text-destructive">
+        No providers are configured on this repository. Please add the required API keys as
+        repository secrets before creating an automation.
+      </p>
+    );
+  }
 
   return (
     <div className="grid max-w-lg gap-4 sm:grid-cols-2">
@@ -55,6 +89,7 @@ export function ProviderModelSelector({
           <FormItem>
             <FormLabel>Provider</FormLabel>
             <Select
+              disabled={isLoadingSetupStatus}
               value={field.value}
               onValueChange={(value: string) => {
                 field.onChange(value);
@@ -63,11 +98,13 @@ export function ProviderModelSelector({
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a provider" />
+                  <SelectValue
+                    placeholder={isLoadingSetupStatus ? 'Loading...' : 'Select a provider'}
+                  />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {providers.map((provider) => (
+                {availableProviders.map((provider) => (
                   <SelectItem key={provider.id} value={provider.id}>
                     {provider.name}
                   </SelectItem>

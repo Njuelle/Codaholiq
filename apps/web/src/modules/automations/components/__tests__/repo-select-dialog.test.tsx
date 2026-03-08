@@ -115,4 +115,29 @@ describe('RepoSelectDialog', () => {
 
     expect(await screen.findByRole('button', { name: 'Creating...' })).toBeInTheDocument();
   });
+
+  it('should only show configured providers after selecting a repo', async () => {
+    const user = userEvent.setup();
+    renderDialog();
+
+    // Select a repo first
+    const triggers = await screen.findAllByRole('combobox');
+    await user.click(triggers[0] as HTMLElement);
+    const option = await screen.findByText('test-org/repo-1');
+    await user.click(option);
+
+    // Wait for setup status to load, then open provider dropdown
+    // MSW returns claude-code as configured, codex as not configured
+    await waitFor(() => {
+      expect(screen.getByText('Claude Code')).toBeInTheDocument();
+    });
+
+    // Open provider select (second combobox after repo select)
+    const updatedTriggers = screen.getAllByRole('combobox');
+    await user.click(updatedTriggers[1] as HTMLElement);
+
+    // Should show Claude Code but not OpenAI Codex
+    expect(screen.getByRole('option', { name: 'Claude Code' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'OpenAI Codex' })).not.toBeInTheDocument();
+  });
 });

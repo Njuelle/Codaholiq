@@ -5,7 +5,7 @@ import type { ProviderSecretStatus } from '@/modules/automations/types';
 
 interface UseSetupStatusParams {
   readonly orgId: number;
-  readonly repoId: number;
+  readonly repoId: number | null;
 }
 
 interface SetupStatusResponse {
@@ -32,8 +32,8 @@ interface UseSetupStatusReturn {
 export function useSetupStatus({ orgId, repoId }: UseSetupStatusParams): UseSetupStatusReturn {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.repos.setupStatus({ orgId, repoId }),
-    queryFn: () => apiGet<SetupStatusResponse>(`/orgs/${orgId}/repos/${repoId}/setup-status`),
-    enabled: orgId > 0 && repoId > 0,
+    queryFn: () => apiGet<SetupStatusResponse>(`/orgs/${orgId}/repos/${repoId!}/setup-status`),
+    enabled: orgId > 0 && repoId !== null && repoId > 0,
     staleTime: 5 * 60 * 1000,
   });
 
