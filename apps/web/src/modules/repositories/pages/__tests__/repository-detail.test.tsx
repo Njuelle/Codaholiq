@@ -42,12 +42,12 @@ describe('RepositoryDetailPage', () => {
     expect(screen.getByText('Repository Info')).toBeInTheDocument();
   });
 
-  it('should show configured status when workflow file exists', async () => {
+  it('should show configured status when workflow file exists and is up to date', async () => {
     renderPage();
 
     await waitFor(
       () => {
-        expect(screen.getByText('Workflow file found')).toBeInTheDocument();
+        expect(screen.getByText('Workflow file up to date')).toBeInTheDocument();
       },
       { timeout: 5000 },
     );

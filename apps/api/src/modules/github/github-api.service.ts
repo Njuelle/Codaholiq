@@ -46,6 +46,11 @@ export interface GitHubRef {
   readonly sha: string;
 }
 
+export interface GitHubFileContent {
+  readonly content: string;
+  readonly sha: string;
+}
+
 export interface GitHubFileCommit {
   readonly sha: string;
   readonly htmlUrl: string;
@@ -349,6 +354,7 @@ export class GitHubApiService {
     message,
     content,
     branch,
+    sha,
   }: {
     installationId: number;
     owner: string;
@@ -357,6 +363,7 @@ export class GitHubApiService {
     message: string;
     content: string;
     branch: string;
+    sha?: string;
   }): Promise<GitHubFileCommit> {
     const octokit = await this.getInstallationOctokit({ installationId });
     const { data } = await octokit.rest.repos.createOrUpdateFileContents({
@@ -366,6 +373,7 @@ export class GitHubApiService {
       message,
       content: Buffer.from(content).toString('base64'),
       branch,
+      ...(sha ? { sha } : {}),
     });
     if (!data.commit.sha || !data.commit.html_url) {
       throw new Error(`GitHub API returned incomplete commit data for ${owner}/${repo}:${path}`);
@@ -427,6 +435,37 @@ export class GitHubApiService {
     } catch (err: unknown) {
       if (err instanceof Error && 'status' in err && (err as { status: number }).status === 404) {
         return false;
+      }
+      throw err;
+    }
+  }
+
+  async getFileContent({
+    installationId,
+    owner,
+    repo,
+    path,
+  }: {
+    installationId: number;
+    owner: string;
+    repo: string;
+    path: string;
+  }): Promise<GitHubFileContent | null> {
+    const octokit = await this.getInstallationOctokit({ installationId });
+    try {
+      const { data } = await octokit.rest.repos.getContent({ owner, repo, path });
+      if (Array.isArray(data) || !('content' in data) || !('sha' in data)) {
+        throw new Error(
+          `Expected file content at ${owner}/${repo}:${path}, got directory or unexpected response`,
+        );
+      }
+      return {
+        content: Buffer.from(data.content, 'base64').toString('utf-8'),
+        sha: data.sha,
+      };
+    } catch (err: unknown) {
+      if (err instanceof Error && 'status' in err && (err as { status: number }).status === 404) {
+        return null;
       }
       throw err;
     }

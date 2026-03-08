@@ -7,6 +7,7 @@ import { SetupStatusCard } from '../setup-status-card';
 
 const defaultProps = {
   workflowFileExists: false as boolean | undefined,
+  workflowFileUpToDate: false as boolean | undefined,
   secretsConfigured: false as boolean | undefined,
   hasAnthropicKey: false as boolean | undefined,
   hasOAuthToken: false as boolean | undefined,
@@ -36,10 +37,71 @@ describe('SetupStatusCard', () => {
     expect(screen.getByText('Unable to check setup status.')).toBeInTheDocument();
   });
 
-  it('should show configured state when workflow file exists', () => {
-    renderWithProviders(<SetupStatusCard {...defaultProps} workflowFileExists={true} />);
+  it('should show up to date state when workflow file exists and is up to date', () => {
+    renderWithProviders(
+      <SetupStatusCard {...defaultProps} workflowFileExists={true} workflowFileUpToDate={true} />,
+    );
 
-    expect(screen.getByText('Workflow file found')).toBeInTheDocument();
+    expect(screen.getByText('Workflow file up to date')).toBeInTheDocument();
+  });
+
+  it('should show outdated state when workflow file exists but is not up to date', () => {
+    renderWithProviders(
+      <SetupStatusCard {...defaultProps} workflowFileExists={true} workflowFileUpToDate={false} />,
+    );
+
+    expect(screen.getByText('Workflow file outdated')).toBeInTheDocument();
+    expect(screen.getByText(/differs from the latest/)).toBeInTheDocument();
+  });
+
+  it('should show Update via PR button when outdated and canEdit', () => {
+    renderWithProviders(
+      <SetupStatusCard
+        {...defaultProps}
+        workflowFileExists={true}
+        workflowFileUpToDate={false}
+        canEdit={true}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Update via PR/i })).toBeInTheDocument();
+  });
+
+  it('should not show Update via PR button when outdated and canEdit is false', () => {
+    renderWithProviders(
+      <SetupStatusCard
+        {...defaultProps}
+        workflowFileExists={true}
+        workflowFileUpToDate={false}
+        canEdit={false}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /Update via PR/i })).not.toBeInTheDocument();
+  });
+
+  it('should show PR URL link after successful update', async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <SetupStatusCard
+        {...defaultProps}
+        workflowFileExists={true}
+        workflowFileUpToDate={false}
+        canEdit={true}
+      />,
+    );
+
+    const updateButton = screen.getByRole('button', { name: /Update via PR/i });
+    await user.click(updateButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('View on GitHub')).toBeInTheDocument();
+    });
+
+    const link = screen.getByRole('link', { name: 'View on GitHub' });
+    expect(link).toHaveAttribute('href', 'https://github.com/test-org/repo-1/pull/2');
+    expect(link).toHaveAttribute('target', '_blank');
   });
 
   it('should show unconfigured state with YAML when workflow file does not exist', async () => {
@@ -68,9 +130,14 @@ describe('SetupStatusCard', () => {
     expect(screen.queryByRole('button', { name: /Create PR/i })).not.toBeInTheDocument();
   });
 
-  it('should not show Create PR button when workflow file exists', () => {
+  it('should not show Create PR button when workflow file exists and is up to date', () => {
     renderWithProviders(
-      <SetupStatusCard {...defaultProps} workflowFileExists={true} canEdit={true} />,
+      <SetupStatusCard
+        {...defaultProps}
+        workflowFileExists={true}
+        workflowFileUpToDate={true}
+        canEdit={true}
+      />,
     );
 
     expect(screen.queryByRole('button', { name: /Create PR/i })).not.toBeInTheDocument();
@@ -149,6 +216,7 @@ describe('SetupStatusCard', () => {
       <SetupStatusCard
         {...defaultProps}
         workflowFileExists={true}
+        workflowFileUpToDate={true}
         secretsConfigured={true}
         hasAnthropicKey={true}
         hasOAuthToken={false}
@@ -164,6 +232,7 @@ describe('SetupStatusCard', () => {
       <SetupStatusCard
         {...defaultProps}
         workflowFileExists={true}
+        workflowFileUpToDate={true}
         secretsConfigured={true}
         hasAnthropicKey={false}
         hasOAuthToken={true}
@@ -179,6 +248,7 @@ describe('SetupStatusCard', () => {
       <SetupStatusCard
         {...defaultProps}
         workflowFileExists={true}
+        workflowFileUpToDate={true}
         secretsConfigured={true}
         hasAnthropicKey={true}
         hasOAuthToken={true}
@@ -194,6 +264,7 @@ describe('SetupStatusCard', () => {
       <SetupStatusCard
         {...defaultProps}
         workflowFileExists={true}
+        workflowFileUpToDate={true}
         secretsConfigured={false}
         hasAnthropicKey={false}
         hasOAuthToken={false}
@@ -210,6 +281,7 @@ describe('SetupStatusCard', () => {
       <SetupStatusCard
         {...defaultProps}
         workflowFileExists={true}
+        workflowFileUpToDate={true}
         secretsConfigured={false}
         hasAnthropicKey={false}
         hasOAuthToken={false}
@@ -230,6 +302,7 @@ describe('SetupStatusCard', () => {
       <SetupStatusCard
         {...defaultProps}
         workflowFileExists={true}
+        workflowFileUpToDate={true}
         secretsConfigured={undefined}
         hasAnthropicKey={undefined}
         hasOAuthToken={undefined}

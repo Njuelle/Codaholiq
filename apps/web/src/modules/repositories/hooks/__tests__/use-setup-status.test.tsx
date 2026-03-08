@@ -36,6 +36,7 @@ describe('useSetupStatus', () => {
     );
 
     expect(result.current.workflowFileExists).toBe(true);
+    expect(result.current.workflowFileUpToDate).toBe(true);
   });
 
   it('should return secrets status from API', async () => {
@@ -61,6 +62,7 @@ describe('useSetupStatus', () => {
         return HttpResponse.json({
           data: {
             workflowFileExists: false,
+            workflowFileUpToDate: false,
             secretsConfigured: false,
             hasAnthropicKey: false,
             hasOAuthToken: false,

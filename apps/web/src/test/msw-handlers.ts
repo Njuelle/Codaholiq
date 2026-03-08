@@ -358,10 +358,21 @@ export const defaultHandlers = [
     );
   }),
 
+  http.post('/api/orgs/:orgId/repos/:repoId/update-workflow', () => {
+    return HttpResponse.json(
+      {
+        data: { pullRequestUrl: 'https://github.com/test-org/repo-1/pull/2' },
+        requestId: 'test-request-id',
+      },
+      { status: 201 },
+    );
+  }),
+
   http.get('/api/orgs/:orgId/repos/:repoId/setup-status', () => {
     return HttpResponse.json({
       data: {
         workflowFileExists: true,
+        workflowFileUpToDate: true,
         secretsConfigured: true,
         hasAnthropicKey: true,
         hasOAuthToken: false,

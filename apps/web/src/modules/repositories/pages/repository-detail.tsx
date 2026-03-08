@@ -29,6 +29,7 @@ export function RepositoryDetailPage(): ReactElement {
   const { repo, isLoading, isError, error } = useRepository({ orgId, repoId });
   const {
     workflowFileExists,
+    workflowFileUpToDate,
     secretsConfigured,
     hasAnthropicKey,
     hasOAuthToken,
@@ -97,6 +98,7 @@ export function RepositoryDetailPage(): ReactElement {
         <div className="lg:col-span-2 space-y-6">
           <SetupStatusCard
             workflowFileExists={workflowFileExists}
+            workflowFileUpToDate={workflowFileUpToDate}
             secretsConfigured={secretsConfigured}
             hasAnthropicKey={hasAnthropicKey}
             hasOAuthToken={hasOAuthToken}

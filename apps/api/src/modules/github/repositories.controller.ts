@@ -60,6 +60,7 @@ export class RepositoriesController {
     @Param('repoId', ParseIntPipe) repoId: number,
   ): Promise<{
     workflowFileExists: boolean;
+    workflowFileUpToDate: boolean;
     secretsConfigured: boolean;
     hasAnthropicKey: boolean;
     hasOAuthToken: boolean;
@@ -76,6 +77,16 @@ export class RepositoriesController {
     @Param('repoId', ParseIntPipe) repoId: number,
   ): Promise<{ pullRequestUrl: string }> {
     return this.repoService.setupWorkflowPR({ orgId, repoId });
+  }
+
+  @Post(':repoId/update-workflow')
+  @RequirePermission(Permission.ORG_SETTINGS_EDIT)
+  @HttpCode(HttpStatus.CREATED)
+  async updateWorkflowPR(
+    @Param('orgId', ParseIntPipe) orgId: number,
+    @Param('repoId', ParseIntPipe) repoId: number,
+  ): Promise<{ pullRequestUrl: string }> {
+    return this.repoService.updateWorkflowPR({ orgId, repoId });
   }
 
   @Get(':repoId')

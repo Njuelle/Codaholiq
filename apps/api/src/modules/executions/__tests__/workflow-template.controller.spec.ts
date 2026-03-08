@@ -2,6 +2,40 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { WorkflowTemplateController } from '../workflow-template.controller';
+import { WorkflowTemplateService } from '../../../common/workflow-template/workflow-template.service';
+
+const MOCK_TEMPLATE = `name: Codaholiq
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'The prompt to send to the AI coding agent'
+        required: true
+        type: string
+      provider:
+        description: 'The AI provider to use'
+        required: true
+        type: string
+        default: 'claude-code'
+      model:
+        description: 'The model to use (format depends on provider)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@v1
+`;
 
 describe('WorkflowTemplateController', () => {
   let app: INestApplication;
@@ -9,6 +43,12 @@ describe('WorkflowTemplateController', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [WorkflowTemplateController],
+      providers: [
+        {
+          provide: WorkflowTemplateService,
+          useValue: { getTemplate: vi.fn().mockResolvedValue(MOCK_TEMPLATE) },
+        },
+      ],
     }).compile();
 
     app = moduleFixture.createNestApplication();

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/common/components/ui
 import { Skeleton } from '@/common/components/ui/skeleton';
 import { useClipboard } from '@/common/hooks/use-clipboard';
 import { useCreateWorkflowPR } from '@/modules/repositories/hooks/use-create-workflow-pr';
+import { useUpdateWorkflowPR } from '@/modules/repositories/hooks/use-update-workflow-pr';
 import { useWorkflowTemplate } from '@/modules/executions/hooks/use-workflow-template';
 import type { ProviderSecretStatus } from '@/modules/automations/types';
 import {
@@ -14,6 +15,7 @@ import {
   Loader2,
   ExternalLink,
   KeyRound,
+  RefreshCw,
 } from 'lucide-react';
 import type { ReactElement } from 'react';
 
@@ -120,8 +122,36 @@ function SecretsStatusSection({
   );
 }
 
+interface PRSuccessBannerProps {
+  readonly pullRequestUrl: string;
+}
+
+function PRSuccessBanner({ pullRequestUrl }: PRSuccessBannerProps): ReactElement {
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950">
+      <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+      <span className="text-sm">
+        Pull request created:{' '}
+        {pullRequestUrl.startsWith(GITHUB_URL_PREFIX) ? (
+          <a
+            href={pullRequestUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium underline"
+          >
+            View on GitHub
+          </a>
+        ) : (
+          <span className="font-medium">check your repository for the new PR</span>
+        )}
+      </span>
+    </div>
+  );
+}
+
 interface SetupStatusCardProps {
   readonly workflowFileExists: boolean | undefined;
+  readonly workflowFileUpToDate: boolean | undefined;
   readonly secretsConfigured: boolean | undefined;
   readonly hasAnthropicKey: boolean | undefined;
   readonly hasOAuthToken: boolean | undefined;
@@ -136,6 +166,7 @@ interface SetupStatusCardProps {
 
 export function SetupStatusCard({
   workflowFileExists,
+  workflowFileUpToDate,
   secretsConfigured,
   hasAnthropicKey,
   hasOAuthToken,
@@ -149,6 +180,7 @@ export function SetupStatusCard({
 }: SetupStatusCardProps): ReactElement {
   const { isCopied, copy } = useClipboard();
   const createPR = useCreateWorkflowPR({ orgId, repoId });
+  const updatePR = useUpdateWorkflowPR({ orgId, repoId });
   const { template: workflowYaml = '' } = useWorkflowTemplate();
 
   if (isLoading) {
@@ -185,10 +217,44 @@ export function SetupStatusCard({
       <CardContent className="space-y-6">
         {/* Step 1: Workflow file */}
         <div>
-          {workflowFileExists ? (
+          {workflowFileExists && workflowFileUpToDate ? (
             <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
               <CheckCircle2 className="h-5 w-5" />
-              <span className="text-sm font-medium">Workflow file found</span>
+              <span className="text-sm font-medium">Workflow file up to date</span>
+            </div>
+          ) : workflowFileExists && !workflowFileUpToDate ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="h-5 w-5" />
+                <span className="text-sm font-medium">Workflow file outdated</span>
+              </div>
+              <p className="text-muted-foreground text-sm">
+                Your workflow file differs from the latest Codaholiq template. Update it to get the
+                latest provider support and improvements.
+              </p>
+              {updatePR.isSuccess && (
+                <PRSuccessBanner pullRequestUrl={updatePR.data.pullRequestUrl} />
+              )}
+              {canEdit && !updatePR.isSuccess && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => updatePR.mutate()}
+                  disabled={updatePR.isPending}
+                >
+                  {updatePR.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating PR...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Update via PR
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -197,24 +263,7 @@ export function SetupStatusCard({
                 <span className="text-sm font-medium">Workflow file not found</span>
               </div>
               {createPR.isSuccess && (
-                <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <span className="text-sm">
-                    Pull request created:{' '}
-                    {createPR.data.pullRequestUrl.startsWith(GITHUB_URL_PREFIX) ? (
-                      <a
-                        href={createPR.data.pullRequestUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-medium underline"
-                      >
-                        View on GitHub
-                      </a>
-                    ) : (
-                      <span className="font-medium">check your repository for the new PR</span>
-                    )}
-                  </span>
-                </div>
+                <PRSuccessBanner pullRequestUrl={createPR.data.pullRequestUrl} />
               )}
               {canEdit && !createPR.isSuccess && (
                 <Button

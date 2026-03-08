@@ -27,6 +27,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { CryptoModule } from './common/crypto/crypto.module';
+import { WorkflowTemplateModule } from './common/workflow-template/workflow-template.module';
 import { EnvValidationService } from './common/crypto/env-validation.service';
 
 @Module({
@@ -60,6 +61,7 @@ import { EnvValidationService } from './common/crypto/env-validation.service';
       }),
     }),
     CryptoModule,
+    WorkflowTemplateModule,
     DatabaseModule,
     RedisModule,
     AuthModule,
