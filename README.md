@@ -31,12 +31,13 @@ Codaholiq dispatches GitHub Actions workflows to the provider of your choice, tr
 ## Features
 
 - **Multi-provider support**: run automations with [Claude Code](https://github.com/anthropics/claude-code-action) (Anthropic), [OpenAI Codex](https://github.com/openai/codex-action), [Gemini CLI](https://github.com/google-github-actions/run-gemini-cli) (Google), or [OpenCode](https://opencode.ai/) (models across Anthropic, OpenAI, Google, DeepSeek). Select provider and model per automation.
-- **Cost tracking & analytics**: automatic cost extraction from workflow logs, per-execution token counts and dollar costs, dashboard with cost overview (24h/7d/30d), cost-by-provider breakdown, and top costliest automations
+- **Cost tracking & analytics**: automatic cost extraction from workflow logs, per-execution token counts and dollar costs, dashboard with cost overview (24h/7d/30d), cost-by-provider breakdown, and top costliest automations. Monthly cost limit guardrails per automation to prevent runaway spend
 - **Trigger on anything**: GitHub events (push, PR, issues, workflow runs), cron schedules, or manual dispatch
 - **Trigger conditions**: filter events with fine-grained conditions using dot-notation payload paths (e.g., only run on pushes to `main`, PRs with a specific label). Supports `equals`, `contains`, `starts_with`, `matches` (regex), and more. Combine groups with AND/OR logic
 - **Prompt templates**: `{{variable}}` syntax with built-in context variables from event payloads
 - **Multi-tenant**: organization-scoped with role-based access control and team management
 - **Real-time logs**: SSE-powered live log streaming for every execution
+- **Automatic workflow setup**: detects missing or outdated workflow files on repositories and opens a PR to create or update them, with secret presence checks
 - **GitHub App integration**: automatic repository syncing, installation management, webhook processing
 
 ## How it Works
@@ -49,7 +50,7 @@ Pick a premade template from the catalog or start from scratch with a custom aut
 
 ![Template catalog](docs/screenshots/create%20automation%200.png)
 
-The catalog includes 27 ready-to-use templates across 7 categories: CI/CD, Code Quality, Security, Dependencies, Project Management, Documentation, and Developer Experience. Select a template, choose a repository, provider, model and you're live in seconds.
+The catalog includes 28 ready-to-use templates across 7 categories: CI/CD, Code Quality, Security, Dependencies, Project Management, Documentation, and Developer Experience. Select a template, choose a repository, provider, model and you're live in seconds.
 
 For full control, choose **Custom Automation** and walk through the step-by-step form:
 
