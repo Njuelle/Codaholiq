@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, desc, gt, gte, count, sum, sql, isNotNull, inArray } from 'drizzle-orm';
+import { eq, and, desc, gt, gte, count, sum, sql, isNotNull, inArray, type SQL } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../../database/database.module';
 import * as schema from '../../database/schema';
@@ -11,6 +11,26 @@ type ExecutionStatusValue = (typeof executions.status.enumValues)[number];
 @Injectable()
 export class ExecutionRepository {
   constructor(@Inject(DRIZZLE) private readonly db: NodePgDatabase<typeof schema>) {}
+
+  private buildCostConditions({
+    orgId,
+    since,
+    repoId,
+  }: {
+    orgId: number;
+    since: Date;
+    repoId?: number;
+  }): SQL[] {
+    const conditions: SQL[] = [
+      eq(automations.orgId, orgId),
+      gte(executions.createdAt, since),
+      isNotNull(executions.totalCostMicros),
+    ];
+    if (repoId !== undefined) {
+      conditions.push(eq(automations.repoId, repoId));
+    }
+    return conditions;
+  }
 
   async create({
     automationId,
@@ -373,7 +393,15 @@ export class ExecutionRepository {
       .where(eq(executions.id, executionId));
   }
 
-  async sumCostInDateRange({ orgId, since }: { orgId: number; since: Date }): Promise<{
+  async sumCostInDateRange({
+    orgId,
+    since,
+    repoId,
+  }: {
+    orgId: number;
+    since: Date;
+    repoId?: number;
+  }): Promise<{
     totalCostMicros: number;
     totalInputTokens: number;
     totalOutputTokens: number;
@@ -388,13 +416,7 @@ export class ExecutionRepository {
       })
       .from(executions)
       .innerJoin(automations, eq(executions.automationId, automations.id))
-      .where(
-        and(
-          eq(automations.orgId, orgId),
-          gt(executions.createdAt, since),
-          isNotNull(executions.totalCostMicros),
-        ),
-      );
+      .where(and(...this.buildCostConditions({ orgId, since, repoId })));
 
     return {
       totalCostMicros: Number(row.totalCostMicros ?? 0),
@@ -407,9 +429,11 @@ export class ExecutionRepository {
   async sumCostByProviderInDateRange({
     orgId,
     since,
+    repoId,
   }: {
     orgId: number;
     since: Date;
+    repoId?: number;
   }): Promise<
     { provider: string; model: string | null; totalCostMicros: number; count: number }[]
   > {
@@ -422,13 +446,7 @@ export class ExecutionRepository {
       })
       .from(executions)
       .innerJoin(automations, eq(executions.automationId, automations.id))
-      .where(
-        and(
-          eq(automations.orgId, orgId),
-          gt(executions.createdAt, since),
-          isNotNull(executions.totalCostMicros),
-        ),
-      )
+      .where(and(...this.buildCostConditions({ orgId, since, repoId })))
       .groupBy(executions.provider, executions.model);
 
     return rows.map((r) => ({
@@ -443,10 +461,12 @@ export class ExecutionRepository {
     orgId,
     since,
     limit,
+    repoId,
   }: {
     orgId: number;
     since: Date;
     limit: number;
+    repoId?: number;
   }): Promise<
     {
       automationId: number;
@@ -468,13 +488,7 @@ export class ExecutionRepository {
       })
       .from(executions)
       .innerJoin(automations, eq(executions.automationId, automations.id))
-      .where(
-        and(
-          eq(automations.orgId, orgId),
-          gt(executions.createdAt, since),
-          isNotNull(executions.totalCostMicros),
-        ),
-      )
+      .where(and(...this.buildCostConditions({ orgId, since, repoId })))
       .groupBy(executions.automationId, automations.name)
       .orderBy(desc(sum(executions.totalCostMicros)))
       .limit(limit);
@@ -503,6 +517,51 @@ export class ExecutionRepository {
       sql`DELETE FROM ${executions} WHERE ${executions.createdAt} < ${cutoff}`,
     );
     return Number(result.rowCount);
+  }
+
+  async costOverTime({
+    orgId,
+    from,
+    to,
+    repoId,
+  }: {
+    orgId: number;
+    from: Date;
+    to: Date;
+    repoId?: number;
+  }): Promise<
+    {
+      date: string;
+      totalCostMicros: number;
+      totalInputTokens: number;
+      totalOutputTokens: number;
+      executionCount: number;
+    }[]
+  > {
+    const conditions = this.buildCostConditions({ orgId, since: from, repoId });
+    conditions.push(sql`${executions.createdAt} < ${to}`);
+
+    const rows = await this.db
+      .select({
+        date: sql<string>`DATE_TRUNC('day', ${executions.createdAt})::date::text`,
+        totalCostMicros: sum(executions.totalCostMicros),
+        totalInputTokens: sum(executions.inputTokens),
+        totalOutputTokens: sum(executions.outputTokens),
+        executionCount: count(),
+      })
+      .from(executions)
+      .innerJoin(automations, eq(executions.automationId, automations.id))
+      .where(and(...conditions))
+      .groupBy(sql`DATE_TRUNC('day', ${executions.createdAt})`)
+      .orderBy(sql`DATE_TRUNC('day', ${executions.createdAt})`);
+
+    return rows.map((r) => ({
+      date: r.date,
+      totalCostMicros: Number(r.totalCostMicros ?? 0),
+      totalInputTokens: Number(r.totalInputTokens ?? 0),
+      totalOutputTokens: Number(r.totalOutputTokens ?? 0),
+      executionCount: Number(r.executionCount),
+    }));
   }
 
   async sumCostByAutomationInMonth({

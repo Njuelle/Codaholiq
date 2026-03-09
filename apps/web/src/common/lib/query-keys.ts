@@ -42,6 +42,19 @@ export const queryKeys = {
   dashboard: {
     stats: (orgId: number) => ['orgs', orgId, 'dashboard'] as const,
   },
+  analytics: {
+    costOverTime: ({
+      orgId,
+      from,
+      to,
+      repoId,
+    }: {
+      orgId: number;
+      from: string;
+      to: string;
+      repoId?: number;
+    }) => ['orgs', orgId, 'analytics', 'cost-over-time', from, to, repoId ?? 'all'] as const,
+  },
   models: {
     all: () => ['models'] as const,
   },

@@ -8,6 +8,8 @@ import { OrganizationsService } from './organizations.service';
 import { OrganizationsController } from './organizations.controller';
 import { DashboardService } from './dashboard.service';
 import { DashboardController } from './dashboard.controller';
+import { AnalyticsService } from './analytics.service';
+import { AnalyticsController } from './analytics.controller';
 
 @Module({
   imports: [
@@ -16,8 +18,8 @@ import { DashboardController } from './dashboard.controller';
     forwardRef(() => AutomationsModule),
     forwardRef(() => GitHubModule),
   ],
-  controllers: [OrganizationsController, DashboardController],
-  providers: [OrganizationsRepository, OrganizationsService, DashboardService],
+  controllers: [OrganizationsController, DashboardController, AnalyticsController],
+  providers: [OrganizationsRepository, OrganizationsService, DashboardService, AnalyticsService],
   exports: [OrganizationsRepository, OrganizationsService],
 })
 export class OrganizationsModule {}

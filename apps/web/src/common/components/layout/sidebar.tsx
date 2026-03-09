@@ -4,6 +4,7 @@ import {
   GitFork,
   Zap,
   Play,
+  BarChart3,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, path: 'dashboard' },
   { label: 'Automations', icon: Zap, path: 'automations' },
   { label: 'Executions', icon: Play, path: 'executions' },
+  { label: 'Cost & Usage', icon: BarChart3, path: 'analytics' },
   { label: 'Repositories', icon: GitFork, path: 'repos' },
   { label: 'Settings', icon: Settings, path: 'settings' },
 ] as const;

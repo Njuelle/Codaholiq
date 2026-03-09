@@ -224,35 +224,69 @@ export class ExecutionsService {
     });
   }
 
-  async getCostStats({ orgId, since }: { orgId: number; since: Date }): Promise<{
+  async getCostOverTime({
+    orgId,
+    from,
+    to,
+    repoId,
+  }: {
+    orgId: number;
+    from: Date;
+    to: Date;
+    repoId?: number;
+  }): Promise<
+    {
+      date: string;
+      totalCostMicros: number;
+      totalInputTokens: number;
+      totalOutputTokens: number;
+      executionCount: number;
+    }[]
+  > {
+    return this.executionRepository.costOverTime({ orgId, from, to, repoId });
+  }
+
+  async getCostStats({
+    orgId,
+    since,
+    repoId,
+  }: {
+    orgId: number;
+    since: Date;
+    repoId?: number;
+  }): Promise<{
     totalCostMicros: number;
     totalInputTokens: number;
     totalOutputTokens: number;
     executionsWithCost: number;
   }> {
-    return this.executionRepository.sumCostInDateRange({ orgId, since });
+    return this.executionRepository.sumCostInDateRange({ orgId, since, repoId });
   }
 
   async getCostByProvider({
     orgId,
     since,
+    repoId,
   }: {
     orgId: number;
     since: Date;
+    repoId?: number;
   }): Promise<
     { provider: string; model: string | null; totalCostMicros: number; count: number }[]
   > {
-    return this.executionRepository.sumCostByProviderInDateRange({ orgId, since });
+    return this.executionRepository.sumCostByProviderInDateRange({ orgId, since, repoId });
   }
 
   async getTopCostliestAutomations({
     orgId,
     since,
     limit,
+    repoId,
   }: {
     orgId: number;
     since: Date;
     limit: number;
+    repoId?: number;
   }): Promise<
     {
       automationId: number;
@@ -263,6 +297,6 @@ export class ExecutionsService {
       totalOutputTokens: number;
     }[]
   > {
-    return this.executionRepository.topCostliestAutomations({ orgId, since, limit });
+    return this.executionRepository.topCostliestAutomations({ orgId, since, limit, repoId });
   }
 }

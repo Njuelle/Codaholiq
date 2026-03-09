@@ -73,6 +73,11 @@ const RepositoryDetailPage = lazy(() =>
     default: m.RepositoryDetailPage,
   })),
 );
+const AnalyticsPage = lazy(() =>
+  import('@/modules/analytics/pages/analytics').then((m) => ({
+    default: m.AnalyticsPage,
+  })),
+);
 const OrgSettingsPage = lazy(() =>
   import('@/modules/organizations/pages/org-settings').then((m) => ({
     default: m.OrgSettingsPage,
@@ -232,6 +237,16 @@ const router = createBrowserRouter([
                   <RouteErrorBoundary>
                     <PageSuspense>
                       <ExecutionDetailPage />
+                    </PageSuspense>
+                  </RouteErrorBoundary>
+                ),
+              },
+              {
+                path: 'analytics',
+                element: (
+                  <RouteErrorBoundary>
+                    <PageSuspense>
+                      <AnalyticsPage />
                     </PageSuspense>
                   </RouteErrorBoundary>
                 ),

@@ -60,6 +60,13 @@ export type {
   CreateSharedVariableInput,
   UpdateSharedVariableInput,
 } from '@/modules/variables/types';
+export type {
+  AnalyticsData,
+  CostOverTimePoint,
+  CostSummary as AnalyticsCostSummary,
+  DateRange,
+  DateRangePreset,
+} from '@/modules/analytics/types';
 export type { Notification } from '@/modules/notifications/types';
 export { Permission, ALL_PERMISSIONS, DEFAULT_ROLE_PERMISSIONS } from '@/modules/permissions/types';
 export type { MyPermissionsResponse, AllRolePermissions } from '@/modules/permissions/types';
