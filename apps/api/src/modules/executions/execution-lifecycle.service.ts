@@ -101,17 +101,31 @@ export class ExecutionLifecycleService {
       model,
     });
 
-    const dispatchData = await this.buildDispatchJobData({
-      executionId: execution.id,
-      automationId,
-      automationName,
-      repoId,
-      workflowFile,
-      provider,
-      model,
-    });
+    try {
+      const dispatchData = await this.buildDispatchJobData({
+        executionId: execution.id,
+        automationId,
+        automationName,
+        repoId,
+        workflowFile,
+        provider,
+        model,
+      });
 
-    await this.executionQueue.add(DISPATCH_JOB, dispatchData, DEFAULT_JOB_OPTIONS);
+      await this.executionQueue.add(DISPATCH_JOB, dispatchData, DEFAULT_JOB_OPTIONS);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to queue dispatch for execution ${execution.id}: ${errorMessage}`);
+      await this.executionRepository.updateStatus({
+        id: execution.id,
+        status: 'failed',
+        fields: {
+          errorMessage: `Failed to queue dispatch: ${errorMessage}`,
+          completedAt: new Date(),
+        },
+      });
+      throw error;
+    }
 
     this.logger.log(`Queued dispatch for execution ${execution.id} (automation ${automationId})`);
 

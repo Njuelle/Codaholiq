@@ -212,7 +212,7 @@ describe('ExecutionProcessor', () => {
     it('should fail execution on dispatch error', async () => {
       githubApi.dispatchWorkflow.mockRejectedValue(new Error('GitHub API error'));
       executionRepo.findById.mockResolvedValue({
-        execution: { id: 1, status: 'failed', resolvedPrompt: 'test prompt' },
+        execution: { id: 1, status: 'pending', resolvedPrompt: 'test prompt' },
         automationName: 'Test Automation',
         orgId: 1,
       });
@@ -525,7 +525,7 @@ describe('ExecutionProcessor', () => {
     it('should create notification when dispatch fails', async () => {
       githubApi.dispatchWorkflow.mockRejectedValue(new Error('dispatch error'));
       executionRepo.findById.mockResolvedValue({
-        execution: { id: 1, status: 'failed' },
+        execution: { id: 1, status: 'pending', resolvedPrompt: 'test prompt' },
         automationName: 'Deploy',
         orgId: 42,
       });

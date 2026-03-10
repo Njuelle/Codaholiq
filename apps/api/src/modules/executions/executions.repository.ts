@@ -299,10 +299,7 @@ export class ExecutionRepository {
       .where(and(...conditions))
       .orderBy(executionLogs.timestamp);
 
-    if (limit) {
-      return query.limit(limit);
-    }
-    return query;
+    return query.limit(limit ?? 5000);
   }
 
   async findByGithubRunId({

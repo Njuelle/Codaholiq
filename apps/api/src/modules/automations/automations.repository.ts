@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, inArray, count } from 'drizzle-orm';
+import { eq, and, inArray, count, sql } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../../database/database.module';
 import * as schema from '../../database/schema';
@@ -209,7 +209,7 @@ export class AutomationRepository {
     repoId: number;
     eventType: string;
   }): Promise<(typeof automations.$inferSelect)[]> {
-    const rows = await this.db
+    return this.db
       .select()
       .from(automations)
       .where(
@@ -217,13 +217,9 @@ export class AutomationRepository {
           eq(automations.repoId, repoId),
           eq(automations.triggerType, 'event'),
           eq(automations.enabled, true),
+          sql`${automations.triggerConfig}->'events' @> ${JSON.stringify([eventType])}::jsonb`,
         ),
       );
-
-    return rows.filter((row) => {
-      const config = row.triggerConfig as { events?: string[] } | null;
-      return config?.events?.includes(eventType) ?? false;
-    });
   }
 
   async findCronAutomations(): Promise<(typeof automations.$inferSelect)[]> {

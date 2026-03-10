@@ -82,6 +82,16 @@ export class ExecutionProcessor extends WorkerHost {
       this.logger.warn(`Execution ${executionId} not found, skipping dispatch`);
       return;
     }
+
+    // Idempotency: skip if already dispatched or in a terminal state (retry safety)
+    const { status } = executionRecord.execution;
+    if (TERMINAL_STATUSES.has(status) || status === 'running' || status === 'dispatching') {
+      this.logger.log(
+        `Execution ${executionId} already in state ${status}, skipping duplicate dispatch`,
+      );
+      return;
+    }
+
     const resolvedPrompt = executionRecord.execution.resolvedPrompt;
 
     this.logger.log(
@@ -267,6 +277,15 @@ export class ExecutionProcessor extends WorkerHost {
 
   private async handleCollectLogs(job: Job<CollectLogsJobData>): Promise<void> {
     const { executionId, githubRunId, installationId, owner, repo, provider } = job.data;
+
+    // Idempotency: skip if logs were already collected (cost already reported)
+    const existing = await this.executionRepository.findById({ id: executionId });
+    if (existing?.execution.costReportedAt) {
+      this.logger.log(
+        `Logs already collected for execution ${executionId}, skipping duplicate collection`,
+      );
+      return;
+    }
 
     this.logger.log(`Collecting logs for execution ${executionId}, run ${githubRunId}`);
 

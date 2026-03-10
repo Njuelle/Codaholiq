@@ -22,6 +22,8 @@ export class CronSchedulerService implements OnModuleInit {
       this.logger.error(
         `Failed to sync cron jobs on startup: ${error instanceof Error ? error.message : String(error)}`,
       );
+      // Re-throw so NestJS reports the startup failure — cron jobs are a core feature
+      throw error;
     }
   }
 

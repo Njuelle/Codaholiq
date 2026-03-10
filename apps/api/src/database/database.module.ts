@@ -16,7 +16,7 @@ export const PG_POOL = Symbol('PG_POOL');
       useFactory: (config: ConfigService): Pool =>
         new Pool({
           connectionString: config.getOrThrow<string>('DATABASE_URL'),
-          max: parseInt(config.get<string>('DB_POOL_MAX') ?? '20', 10),
+          max: parseInt(config.get<string>('DB_POOL_MAX') ?? '50', 10),
           min: 2,
           idleTimeoutMillis: 30_000,
           connectionTimeoutMillis: 5_000,

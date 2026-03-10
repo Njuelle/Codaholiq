@@ -174,10 +174,10 @@ describe('CronSchedulerService', () => {
       expect(automationRepo.findCronAutomations).toHaveBeenCalled();
     });
 
-    it('should not throw if sync fails', async () => {
+    it('should re-throw if sync fails so NestJS reports startup failure', async () => {
       automationRepo.findCronAutomations.mockRejectedValue(new Error('DB error'));
 
-      await expect(service.onModuleInit()).resolves.not.toThrow();
+      await expect(service.onModuleInit()).rejects.toThrow('DB error');
     });
   });
 });

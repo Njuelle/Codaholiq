@@ -15,7 +15,7 @@ export interface CronTriggerJobData {
   readonly automationId: number;
 }
 
-@Processor(CRON_TRIGGER_QUEUE)
+@Processor(CRON_TRIGGER_QUEUE, { concurrency: 5 })
 export class CronTriggerProcessor extends WorkerHost {
   private readonly logger = new Logger(CronTriggerProcessor.name);
 

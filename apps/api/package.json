@@ -21,6 +21,8 @@
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.1.16",
     "@nestjs/throttler": "^6.5.0",
+    "@octokit/plugin-retry": "^8.1.0",
+    "@octokit/plugin-throttling": "^11.0.3",
     "@octokit/rest": "^22.0.1",
     "adm-zip": "^0.5.16",
     "bcrypt": "^6.0.0",

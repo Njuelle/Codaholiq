@@ -8,9 +8,12 @@ import type { ListExecutionsQuery } from './dto/list-executions.dto';
 import type { SseMessageEvent } from './sse.types';
 import { TERMINAL_STATUSES } from './executions.constants';
 
+const MAX_SSE_CONNECTIONS = 500;
+
 @Injectable()
 export class ExecutionsService {
   private readonly logger = new Logger(ExecutionsService.name);
+  private activeSseConnections = 0;
 
   constructor(
     @Inject(ExecutionRepository)
@@ -149,11 +152,32 @@ export class ExecutionsService {
     executionId: number;
   }): Observable<SseMessageEvent> {
     return new Observable<SseMessageEvent>((subscriber) => {
+      // Guard against too many concurrent SSE connections
+      if (this.activeSseConnections >= MAX_SSE_CONNECTIONS) {
+        this.logger.warn(
+          `SSE connection limit reached (${MAX_SSE_CONNECTIONS}), rejecting stream for execution ${executionId}`,
+        );
+        subscriber.error(new Error('Too many active SSE connections'));
+        return;
+      }
+      this.activeSseConnections++;
+
       let isTerminal = false;
+      let tornDown = false;
       let unsubscribeRedis: (() => void) | undefined;
+
+      const cleanup = (): void => {
+        if (tornDown) return;
+        tornDown = true;
+        this.activeSseConnections--;
+        unsubscribeRedis?.();
+      };
 
       const init = async (): Promise<void> => {
         try {
+          // If client already disconnected during async init, bail out
+          if (tornDown) return;
+
           // Verify execution belongs to org
           const result = await this.executionRepository.findById({
             id: executionId,
@@ -184,6 +208,9 @@ export class ExecutionsService {
             subscriber.complete();
             return;
           }
+
+          // If client disconnected while we were fetching, skip Redis subscription
+          if (tornDown) return;
 
           // Subscribe to Redis for real-time updates
           unsubscribeRedis = this.redisLogPublisher.subscribe({
@@ -217,9 +244,10 @@ export class ExecutionsService {
         }
       }, 15000);
 
+      // Teardown: called by RxJS when client disconnects or stream completes
       return () => {
         clearInterval(heartbeat);
-        unsubscribeRedis?.();
+        cleanup();
       };
     });
   }

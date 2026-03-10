@@ -1,10 +1,14 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Octokit } from '@octokit/rest';
+import { throttling } from '@octokit/plugin-throttling';
+import { retry } from '@octokit/plugin-retry';
 import * as jwt from 'jsonwebtoken';
 import type Redis from 'ioredis';
 import { REDIS } from '../redis/redis.constants';
 import { EncryptionService } from '../../common/crypto/encryption.service';
+
+const ThrottledOctokit = Octokit.plugin(throttling, retry);
 
 const GITHUB_API_BASE = 'https://api.github.com';
 const APP_JWT_EXPIRY_SECONDS = 600;
@@ -133,7 +137,25 @@ export class GitHubApiService {
 
   async getInstallationOctokit({ installationId }: { installationId: number }): Promise<Octokit> {
     const token = await this.getInstallationToken({ installationId });
-    return new Octokit({ auth: token });
+    const logger = this.logger;
+    return new ThrottledOctokit({
+      auth: token,
+      retry: { retries: 3 },
+      throttle: {
+        onRateLimit: (retryAfter, options, _octokit, retryCount) => {
+          logger.warn(
+            `GitHub rate limit hit for ${options.method} ${options.url}, retrying after ${retryAfter}s (attempt ${retryCount + 1})`,
+          );
+          return retryCount < 2;
+        },
+        onSecondaryRateLimit: (retryAfter, options, _octokit, retryCount) => {
+          logger.warn(
+            `GitHub secondary rate limit hit for ${options.method} ${options.url}, retrying after ${retryAfter}s`,
+          );
+          return retryCount < 1;
+        },
+      },
+    });
   }
 
   async listRepositories({
