@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  Define triggers. Choose your AI provider. Control costs. Ship faster.
+  Define triggers. Choose your AI provider. Control costs. Transform your GitHub repositories into agentic factories
 </p>
 
 <p align="center">
